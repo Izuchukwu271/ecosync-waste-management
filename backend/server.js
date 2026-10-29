@@ -4,6 +4,9 @@ const cors = require("cors");
 const { randomUUID } = require("crypto");
 require("dotenv").config();
 
+const pool = require("./config/db");
+
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -155,6 +158,31 @@ app.use((err, req, res, next) => {
 
   next(err);
 });
+
+
+app.get("/api/health/database", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        current_database() AS database_name,
+        PostGIS_Version() AS postgis_version
+    `);
+
+    res.status(200).json({
+      status: "healthy",
+      database: result.rows[0].database_name,
+      postgis: result.rows[0].postgis_version
+    });
+  } catch (error) {
+    console.error("Database health check failed:", error.message);
+
+    res.status(503).json({
+      status: "unhealthy",
+      message: "Database connection failed"
+    });
+  }
+});
+
 
 // Start server
 app.listen(PORT, () => {
