@@ -1,10 +1,15 @@
 
 const express = require("express");
 const cors = require("cors");
-const { randomUUID } = require("crypto");
 require("dotenv").config();
 
 const pool = require("./config/db");
+const supabase = require("./config/supabase");
+
+const {
+  uploadPhotos,
+  validateImageContents
+} = require("./middleware/upload");
 
 
 const app = express();
@@ -42,33 +47,94 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// GET all reports
-app.get("/api/reports", (req, res) => {
-  res.status(200).json({
-    count: reports.length,
-    reports
-  });
+
+ // GET all reports from PostgreSQL
+app.get("/api/reports", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        id,
+        reporter_id,
+        waste_description AS description,
+        waste_amount AS "wasteAmount",
+        road_condition AS "roadCondition",
+        ST_Y(location::geometry) AS latitude,
+        ST_X(location::geometry) AS longitude,
+        status,
+        created_at AS "createdAt",
+        updated_at AS "updatedAt"
+      FROM public.waste_reports
+      ORDER BY created_at DESC
+    `);
+
+    res.status(200).json({
+      count: result.rows.length,
+      reports: result.rows
+    });
+  } catch (error) {
+    console.error("Failed to retrieve waste reports:", error.message);
+
+    res.status(500).json({
+      error: "Unable to retrieve waste reports"
+    });
+  }
 });
 
-// GET one report by ID
-app.get("/api/reports/:id", (req, res) => {
-  const report = reports.find(
-    (item) => item.id === req.params.id
-  );
 
-  if (!report) {
-    return res.status(404).json({
-      error: "Waste report not found"
+
+ // GET one report by ID from PostgreSQL
+app.get("/api/reports/:id", async (req, res) => {
+  const { id } = req.params;
+
+  if (!/^\d+$/.test(id) || id === "0") {
+    return res.status(400).json({
+      error: "Report ID must be a positive integer"
     });
   }
 
-  res.status(200).json({ report });
+  try {
+    const result = await pool.query(
+      `
+        SELECT
+          id,
+          reporter_id,
+          waste_description AS description,
+          waste_amount AS "wasteAmount",
+          road_condition AS "roadCondition",
+          ST_Y(location::geometry) AS latitude,
+          ST_X(location::geometry) AS longitude,
+          status,
+          created_at AS "createdAt",
+          updated_at AS "updatedAt"
+        FROM public.waste_reports
+        WHERE id = $1
+      `,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error: "Waste report not found"
+      });
+    }
+
+    res.status(200).json({
+      report: result.rows[0]
+    });
+  } catch (error) {
+    console.error("Failed to retrieve waste report:", error.message);
+
+    res.status(500).json({
+      error: "Unable to retrieve waste report"
+    });
+  }
 });
 
-// POST a new report
-app.post("/api/reports", (req, res) => {
+
+ // POST a new report to PostgreSQL
+app.post("/api/reports", async (req, res) => {
   const {
-    area,
+    reporterId,
     latitude,
     longitude,
     wasteAmount,
@@ -76,13 +142,14 @@ app.post("/api/reports", (req, res) => {
     description = ""
   } = req.body || {};
 
-  // Validate required fields
+  // Development-only reporter identity.
+  // Production must obtain this from authenticated user credentials.
   if (
-    typeof area !== "string" ||
-    area.trim().length === 0
+    !Number.isSafeInteger(reporterId) ||
+    reporterId <= 0
   ) {
     return res.status(400).json({
-      error: "Area is required"
+      error: "A valid reporterId is required for development testing"
     });
   }
 
@@ -129,23 +196,62 @@ app.post("/api/reports", (req, res) => {
     });
   }
 
-  const report = {
-    id: randomUUID(),
-    area: area.trim(),
-    latitude,
-    longitude,
-    wasteAmount,
-    roadCondition,
-    description: description.trim(),
-    createdAt: new Date().toISOString()
-  };
+  try {
+    const result = await pool.query(
+      `
+        INSERT INTO public.waste_reports (
+          reporter_id,
+          waste_description,
+          waste_amount,
+          road_condition,
+          location
+        )
+        VALUES (
+          $1,
+          $2,
+          $3,
+          $4,
+          ST_SetSRID(ST_MakePoint($5, $6), 4326)::geography
+        )
+        RETURNING
+          id,
+          reporter_id,
+          waste_description AS description,
+          waste_amount AS "wasteAmount",
+          road_condition AS "roadCondition",
+          ST_Y(location::geometry) AS latitude,
+          ST_X(location::geometry) AS longitude,
+          status,
+          created_at AS "createdAt",
+          updated_at AS "updatedAt"
+      `,
+      [
+        reporterId,
+        description.trim() || null,
+        wasteAmount,
+        roadCondition,
+        longitude,
+        latitude
+      ]
+    );
 
-  reports.push(report);
+    res.status(201).json({
+      message: "Waste report created successfully",
+      report: result.rows[0]
+    });
+  } catch (error) {
+    console.error("Failed to create waste report:", error.message);
 
-  res.status(201).json({
-    message: "Waste report created successfully",
-    report
-  });
+    if (error.code === "23503") {
+      return res.status(400).json({
+        error: "The specified reporter does not exist"
+      });
+    }
+
+    res.status(500).json({
+      error: "Unable to create waste report"
+    });
+  }
 });
 
 // Handle malformed JSON
