@@ -205,6 +205,117 @@ app.get(
   }
 );
 
+app.get(
+  "/api/reports/:id/photos",
+  authenticateToken,
+  async (req, res) => {
+    const { id } = req.params;
+
+    // Validate report ID
+    if (!/^\d+$/.test(id) || id === "0") {
+      return res.status(400).json({
+        error: "Report ID must be a positive integer"
+      });
+    }
+
+    try {
+      // Find the report and its owner
+      const reportResult = await pool.query(
+        `SELECT id, reporter_id
+         FROM public.waste_reports
+         WHERE id = $1`,
+        [id]
+      );
+
+      if (reportResult.rows.length === 0) {
+        return res.status(404).json({
+          error: "Waste report not found"
+        });
+      }
+
+      const report = reportResult.rows[0];
+
+      // Check whether this user can access the report
+      if (
+        req.user.role === "reporter" &&
+        String(report.reporter_id) !== req.user.id
+      ) {
+        return res.status(403).json({
+          error: "You do not have permission to access these photos"
+        });
+      }
+
+      if (
+        ![
+          "reporter",
+          "waste_management_team",
+          "system_administrator"
+        ].includes(req.user.role)
+      ) {
+        return res.status(403).json({
+          error: "You do not have permission to access these photos"
+        });
+      }
+
+      // Retrieve photo metadata
+      const photoResult = await pool.query(
+        `SELECT
+           id,
+           storage_path,
+           original_filename,
+           mime_type,
+           file_size_bytes,
+           created_at AS "createdAt"
+         FROM public.waste_report_photos
+         WHERE report_id = $1
+         ORDER BY created_at ASC`,
+        [id]
+      );
+
+      const bucket = process.env.SUPABASE_BUCKET;
+
+      if (!bucket) {
+        throw new Error("Supabase bucket configuration is missing");
+      }
+
+      // Generate a temporary signed URL for each photo
+      const photos = await Promise.all(
+        photoResult.rows.map(async (photo) => {
+          const { data, error } = await supabase.storage
+            .from(bucket)
+            .createSignedUrl(photo.storage_path, 300);
+
+          if (error) {
+            throw error;
+          }
+
+          return {
+            id: photo.id,
+            filename: photo.original_filename,
+            mimeType: photo.mime_type,
+            fileSizeBytes: photo.file_size_bytes,
+            createdAt: photo.createdAt,
+            signedUrl: data.signedUrl,
+            expiresInSeconds: 300
+          };
+        })
+      );
+
+      return res.status(200).json({
+        reportId: report.id,
+        count: photos.length,
+        photos
+      });
+
+    } catch (error) {
+      console.error("Failed to retrieve report photos:", error.message);
+
+      return res.status(500).json({
+        error: "Unable to retrieve report photos"
+      });
+    }
+  }
+);
  // POST a new report to PostgreSQL
 
 const receivePhotos = (req, res, next) => {
