@@ -7,6 +7,7 @@ const crypto = require("crypto");
 
 const pool = require("./config/db");
 const supabase = require("./config/supabase");
+const authRoutes = require("./routes/auth");
 
 const {
   uploadPhotos,
@@ -14,11 +15,14 @@ const {
 } = require("./middleware/upload");
 
 
+
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
+app.use("/api/auth", authRoutes);
 
 // Temporary storage. PostgreSQL will replace this later.
 const reports = [];
