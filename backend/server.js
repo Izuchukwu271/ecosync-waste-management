@@ -8,6 +8,10 @@ const crypto = require("crypto");
 const pool = require("./config/db");
 const supabase = require("./config/supabase");
 const authRoutes = require("./routes/auth");
+const {
+  authenticateToken,
+  authorizeRoles,
+} = require("./middleware/auth");
 
 const {
   uploadPhotos,
@@ -55,87 +59,151 @@ app.get("/api/health", (req, res) => {
 
 
  // GET all reports from PostgreSQL
-app.get("/api/reports", async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT
-        id,
-        reporter_id,
-        waste_description AS description,
-        waste_amount AS "wasteAmount",
-        road_condition AS "roadCondition",
-        ST_Y(location::geometry) AS latitude,
-        ST_X(location::geometry) AS longitude,
-        status,
-        created_at AS "createdAt",
-        updated_at AS "updatedAt"
-      FROM public.waste_reports
-      ORDER BY created_at DESC
-    `);
 
-    res.status(200).json({
-      count: result.rows.length,
-      reports: result.rows
-    });
-  } catch (error) {
-    console.error("Failed to retrieve waste reports:", error.message);
+app.get(
+  "/api/reports",
+  authenticateToken,
+  async (req, res) => {
+    try {
+      let query;
+      let values = [];
 
-    res.status(500).json({
-      error: "Unable to retrieve waste reports"
-    });
+      if (req.user.role === "reporter") {
+        query = `
+          SELECT
+            id,
+            reporter_id,
+            waste_description AS description,
+            waste_amount AS "wasteAmount",
+            road_condition AS "roadCondition",
+            ST_Y(location::geometry) AS latitude,
+            ST_X(location::geometry) AS longitude,
+            status,
+            created_at AS "createdAt",
+            updated_at AS "updatedAt"
+          FROM public.waste_reports
+          WHERE reporter_id = $1
+          ORDER BY created_at DESC
+        `;
+
+        values = [req.user.id];
+      } else if (
+        req.user.role === "waste_management_team" ||
+        req.user.role === "system_administrator"
+      ) {
+        query = `
+          SELECT
+            id,
+            reporter_id,
+            waste_description AS description,
+            waste_amount AS "wasteAmount",
+            road_condition AS "roadCondition",
+            ST_Y(location::geometry) AS latitude,
+            ST_X(location::geometry) AS longitude,
+            status,
+            created_at AS "createdAt",
+            updated_at AS "updatedAt"
+          FROM public.waste_reports
+          ORDER BY created_at DESC
+        `;
+      } else {
+        return res.status(403).json({
+          error: "You do not have permission to view reports"
+        });
+      }
+
+      const result = await pool.query(query, values);
+
+      return res.status(200).json({
+        count: result.rows.length,
+        reports: result.rows
+      });
+    } catch (error) {
+      console.error("Failed to retrieve waste reports:", error.message);
+
+      return res.status(500).json({
+        error: "Unable to retrieve waste reports"
+      });
+    }
   }
-});
+);
+
 
 
 
  // GET one report by ID from PostgreSQL
-app.get("/api/reports/:id", async (req, res) => {
-  const { id } = req.params;
 
-  if (!/^\d+$/.test(id) || id === "0") {
-    return res.status(400).json({
-      error: "Report ID must be a positive integer"
-    });
-  }
+app.get(
+  "/api/reports/:id",
+  authenticateToken,
+  async (req, res) => {
+    const { id } = req.params;
 
-  try {
-    const result = await pool.query(
-      `
-        SELECT
-          id,
-          reporter_id,
-          waste_description AS description,
-          waste_amount AS "wasteAmount",
-          road_condition AS "roadCondition",
-          ST_Y(location::geometry) AS latitude,
-          ST_X(location::geometry) AS longitude,
-          status,
-          created_at AS "createdAt",
-          updated_at AS "updatedAt"
-        FROM public.waste_reports
-        WHERE id = $1
-      `,
-      [id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        error: "Waste report not found"
+    if (!/^\d+$/.test(id) || id === "0") {
+      return res.status(400).json({
+        error: "Report ID must be a positive integer"
       });
     }
 
-    res.status(200).json({
-      report: result.rows[0]
-    });
-  } catch (error) {
-    console.error("Failed to retrieve waste report:", error.message);
+    try {
+      const result = await pool.query(
+        `
+          SELECT
+            id,
+            reporter_id,
+            waste_description AS description,
+            waste_amount AS "wasteAmount",
+            road_condition AS "roadCondition",
+            ST_Y(location::geometry) AS latitude,
+            ST_X(location::geometry) AS longitude,
+            status,
+            created_at AS "createdAt",
+            updated_at AS "updatedAt"
+          FROM public.waste_reports
+          WHERE id = $1
+        `,
+        [id]
+      );
 
-    res.status(500).json({
-      error: "Unable to retrieve waste report"
-    });
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          error: "Waste report not found"
+        });
+      }
+
+      const report = result.rows[0];
+
+      if (
+        req.user.role === "reporter" &&
+        String(report.reporter_id) !== req.user.id
+      ) {
+        return res.status(403).json({
+          error: "You do not have permission to access this report"
+        });
+      }
+
+      if (
+        req.user.role !== "reporter" &&
+        req.user.role !== "waste_management_team" &&
+        req.user.role !== "system_administrator"
+      ) {
+        return res.status(403).json({
+          error: "You do not have permission to access this report"
+        });
+      }
+
+      return res.status(200).json({
+        report
+      });
+    } catch (error) {
+      console.error("Failed to retrieve waste report:", error.message);
+
+      return res.status(500).json({
+        error: "Unable to retrieve waste report"
+      });
+    }
   }
-});
-
+);
 
  // POST a new report to PostgreSQL
 
@@ -163,15 +231,20 @@ const receivePhotos = (req, res, next) => {
   });
 };
 
+
 app.post(
   "/api/reports",
+  authenticateToken,
+  authorizeRoles("reporter"),
   receivePhotos,
   validateImageContents,
   async (req, res) => {
     const body = req.body || {};
 
+    // The reporter identity comes from verified authentication.
+    const reporterId = req.user.id;
+
     // Multipart form values arrive as strings.
-    const reporterId = Number(body.reporterId);
     const latitude = Number(body.latitude);
     const longitude = Number(body.longitude);
 
@@ -181,17 +254,7 @@ app.post(
 
     const files = req.files || [];
 
-    if (
-      typeof body.reporterId === "undefined" ||
-      String(body.reporterId).trim() === "" ||
-      !Number.isSafeInteger(reporterId) ||
-      reporterId <= 0
-    ) {
-      return res.status(400).json({
-        error: "A valid reporterId is required for development testing"
-      });
-    }
-
+    // Validate latitude.
     if (
       typeof body.latitude === "undefined" ||
       String(body.latitude).trim() === "" ||
@@ -204,6 +267,7 @@ app.post(
       });
     }
 
+    // Validate longitude.
     if (
       typeof body.longitude === "undefined" ||
       String(body.longitude).trim() === "" ||
@@ -216,18 +280,21 @@ app.post(
       });
     }
 
+    // Validate waste amount.
     if (!WASTE_AMOUNTS.includes(wasteAmount)) {
       return res.status(400).json({
         error: "Waste amount must be low, medium, or high"
       });
     }
 
+    // Validate road condition.
     if (!ROAD_CONDITIONS.includes(roadCondition)) {
       return res.status(400).json({
         error: "Road condition must be good, damaged, blocked, or unknown"
       });
     }
 
+    // Validate description.
     if (
       typeof description !== "string" ||
       description.length > 500
@@ -238,15 +305,29 @@ app.post(
     }
 
     const bucket = process.env.SUPABASE_BUCKET;
-    const uploadedPaths = [];
-    const client = await pool.connect();
 
+    if (!bucket) {
+      console.error("SUPABASE_BUCKET is not configured");
+
+      return res.status(500).json({
+        error: "Photo storage is not configured"
+      });
+    }
+
+    const uploadedPaths = [];
+
+    let client;
     let transactionStarted = false;
 
     try {
+      // Acquire database connection.
+      client = await pool.connect();
+
+      // Start database transaction.
       await client.query("BEGIN");
       transactionStarted = true;
 
+      // Create waste report.
       const reportResult = await client.query(
         `
           INSERT INTO public.waste_reports (
@@ -294,6 +375,7 @@ app.post(
         "image/webp": "webp"
       };
 
+      // Upload photos to private Supabase storage.
       for (const file of files) {
         const extension = extensions[file.mimetype];
 
@@ -301,7 +383,6 @@ app.post(
           throw new Error("Unsupported image format");
         }
 
-        // Never use the original filename as the storage key.
         const storagePath =
           `${report.id}/${crypto.randomUUID()}.${extension}`;
 
@@ -318,6 +399,7 @@ app.post(
 
         uploadedPaths.push(storagePath);
 
+        // Save photo metadata in PostgreSQL.
         const photoResult = await client.query(
           `
             INSERT INTO public.waste_report_photos (
@@ -349,6 +431,7 @@ app.post(
         savedPhotos.push(photoResult.rows[0]);
       }
 
+      // Commit database transaction.
       await client.query("COMMIT");
       transactionStarted = false;
 
@@ -357,17 +440,26 @@ app.post(
         report,
         photos: savedPhotos
       });
-    } catch (error) {
-      console.error("Failed to create waste report:", error.message);
 
-      if (transactionStarted) {
+    } catch (error) {
+      console.error(
+        "Failed to create waste report:",
+        error.message
+      );
+
+      // Roll back database changes.
+      if (client && transactionStarted) {
         try {
           await client.query("ROLLBACK");
         } catch (rollbackError) {
-          console.error("Database rollback failed:", rollbackError.message);
+          console.error(
+            "Database rollback failed:",
+            rollbackError.message
+          );
         }
       }
 
+      // Remove uploaded photos if database operation fails.
       if (uploadedPaths.length > 0) {
         try {
           const { error: cleanupError } = await supabase.storage
@@ -386,15 +478,18 @@ app.post(
 
       if (error.code === "23503") {
         return res.status(400).json({
-          error: "The specified reporter does not exist"
+          error: "The authenticated reporter account does not exist"
         });
       }
 
       return res.status(500).json({
         error: "Unable to create waste report and its photos"
       });
+
     } finally {
-      client.release();
+      if (client) {
+        client.release();
+      }
     }
   }
 );
@@ -421,6 +516,29 @@ app.get("/api/health/database", async (req, res) => {
     });
   }
 });
+
+app.get(
+  "/api/auth/me",
+  authenticateToken,
+  (req, res) => {
+    res.status(200).json({
+      message: "Authentication successful",
+      user: req.user,
+    });
+  }
+);
+
+app.get(
+  "/api/auth/admin-test",
+  authenticateToken,
+  authorizeRoles("system_administrator"),
+  (req, res) => {
+    res.json({
+      message: "Administrator access granted",
+      user: req.user,
+    });
+  }
+);
 
 
 // Start server
