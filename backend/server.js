@@ -316,6 +316,102 @@ app.get(
     }
   }
 );
+
+app.patch(
+  "/api/reports/:id/status",
+  authenticateToken,
+  authorizeRoles("waste_management_team", "system_administrator"),
+  async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!/^\d+$/.test(id) || id === "0") {
+      return res.status(400).json({
+        error: "Report ID must be a positive integer"
+      });
+    }
+
+    const allowedTransitions = {
+      pending: ["verified", "rejected"],
+      verified: ["assigned", "rejected"],
+      assigned: ["collected"],
+      collected: [],
+      rejected: []
+    };
+
+    if (
+      typeof status !== "string" ||
+      !Object.prototype.hasOwnProperty.call(
+        allowedTransitions,
+        status
+      )
+    ) {
+      return res.status(400).json({
+        error: "Invalid report status"
+      });
+    }
+
+    const client = await pool.connect();
+
+    try {
+      await client.query("BEGIN");
+
+      const result = await client.query(
+        `SELECT id, status
+         FROM public.waste_reports
+         WHERE id = $1
+         FOR UPDATE`,
+        [id]
+      );
+
+      if (result.rows.length === 0) {
+        await client.query("ROLLBACK");
+
+        return res.status(404).json({
+          error: "Waste report not found"
+        });
+      }
+
+      const currentStatus = result.rows[0].status;
+
+      if (!allowedTransitions[currentStatus].includes(status)) {
+        await client.query("ROLLBACK");
+
+        return res.status(409).json({
+          error: `Cannot change report status from ${currentStatus} to ${status}`
+        });
+      }
+
+      const updatedResult = await client.query(
+        `UPDATE public.waste_reports
+         SET status = $1,
+             updated_at = NOW()
+         WHERE id = $2
+         RETURNING id, status, updated_at AS "updatedAt"`,
+        [status, id]
+      );
+
+      await client.query("COMMIT");
+
+      return res.status(200).json({
+        message: "Waste report status updated successfully",
+        report: updatedResult.rows[0]
+      });
+
+    } catch (error) {
+      await client.query("ROLLBACK");
+
+      console.error("Status update failed:", error.message);
+
+      return res.status(500).json({
+        error: "Unable to update waste report status"
+      });
+
+    } finally {
+      client.release();
+    }
+  }
+);
  // POST a new report to PostgreSQL
 
 const receivePhotos = (req, res, next) => {
