@@ -317,6 +317,83 @@ app.get(
   }
 );
 
+// GET REPORT STATUS HISTORY
+app.get(
+  "/api/reports/:id/history",
+  authenticateToken,
+  async (req, res) => {
+    const { id } = req.params;
+
+    // Validate report ID
+    if (!/^[1-9]\d*$/.test(id)) {
+      return res.status(400).json({
+        error: "Invalid report ID",
+      });
+    }
+
+    try {
+      // Check whether the report exists and who owns it
+      const reportResult = await pool.query(
+        `SELECT id, reporter_id
+         FROM public.waste_reports
+         WHERE id = $1`,
+        [id]
+      );
+
+      if (reportResult.rows.length === 0) {
+        return res.status(404).json({
+          error: "Waste report not found",
+        });
+      }
+
+      const report = reportResult.rows[0];
+
+      // Reporters can only access their own report history
+      if (
+        req.user.role === "reporter" &&
+        String(report.reporter_id) !== req.user.id
+      ) {
+        return res.status(403).json({
+          error: "You do not have permission to view this report history",
+        });
+      }
+
+      // Retrieve the report's complete status history
+      const historyResult = await pool.query(
+        `SELECT
+            h.id,
+            h.report_id,
+            h.previous_status,
+            h.new_status,
+            h.rejection_reason,
+            h.changed_at,
+            u.id AS changed_by_id,
+            u.full_name AS changed_by_name,
+            u.role AS changed_by_role
+         FROM public.waste_report_status_history h
+         JOIN public.app_users u
+           ON h.changed_by = u.id
+         WHERE h.report_id = $1
+         ORDER BY h.changed_at ASC, h.id ASC`,
+        [id]
+      );
+
+      return res.status(200).json({
+        reportId: Number(id),
+        totalEvents: historyResult.rows.length,
+        history: historyResult.rows,
+      });
+
+    } catch (error) {
+      console.error("Report history error:", error.message);
+
+      return res.status(500).json({
+        error: "Unable to retrieve report status history",
+      });
+    }
+  }
+);
+
 // updates reports 
 
 app.patch(
