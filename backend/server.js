@@ -4,10 +4,12 @@ const cors = require("cors");
 require("dotenv").config();
 
 const crypto = require("crypto");
+const helmet = require("helmet");
 
 const pool = require("./config/db");
 const supabase = require("./config/supabase");
 const authRoutes = require("./routes/auth");
+const rateLimit = require("express-rate-limit");
 const {
   authenticateToken,
   authorizeRoles,
@@ -24,9 +26,34 @@ const {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+const allowedOrigins = [
+  "http://localhost:5500",
+  "http://127.0.0.1:5500",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173"
+];
+
+const corsOptions = {
+  origin: allowedOrigins,
+  methods: ["GET", "POST", "PATCH", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  maxAge: 600
+};
+
+app.use(cors(corsOptions));
+app.use(helmet());
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: {
+    error: "Too many authentication attempts. Please try again later."
+  }
+});
 app.use(express.json({ limit: "1mb" }));
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", authLimiter, authRoutes);
 
 // Temporary storage. PostgreSQL will replace this later.
 const reports = [];
