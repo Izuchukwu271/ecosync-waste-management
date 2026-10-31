@@ -317,6 +317,7 @@ app.get(
   }
 );
 
+// updates reports 
 
 app.patch(
   "/api/reports/:id/status",
@@ -324,7 +325,7 @@ app.patch(
   authorizeRoles("waste_management_team", "system_administrator"),
   async (req, res) => {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, rejectionReason } = req.body;
 
     if (!/^\d+$/.test(id) || id === "0") {
       return res.status(400).json({
@@ -352,6 +353,32 @@ app.patch(
       });
     }
 
+    // Validate rejection reason.
+    let normalizedReason = null;
+
+    if (status === "rejected") {
+      if (typeof rejectionReason !== "string") {
+        return res.status(400).json({
+          error: "A rejection reason is required"
+        });
+      }
+
+      normalizedReason = rejectionReason.trim();
+
+      if (
+        normalizedReason.length < 5 ||
+        normalizedReason.length > 500
+      ) {
+        return res.status(400).json({
+          error: "Rejection reason must contain between 5 and 500 characters"
+        });
+      }
+    } else if (rejectionReason !== undefined) {
+      return res.status(400).json({
+        error: "A rejection reason is only allowed when rejecting a report"
+      });
+    }
+
     let client;
 
     try {
@@ -359,7 +386,6 @@ app.patch(
 
       await client.query("BEGIN");
 
-      // Lock the report to prevent conflicting updates.
       const result = await client.query(
         `SELECT id, status
          FROM public.waste_reports
@@ -376,10 +402,8 @@ app.patch(
         });
       }
 
-      const report = result.rows[0];
-      const previousStatus = report.status;
+      const previousStatus = result.rows[0].status;
 
-      // Validate the requested transition.
       if (!allowedTransitions[previousStatus].includes(status)) {
         await client.query("ROLLBACK");
 
@@ -388,7 +412,6 @@ app.patch(
         });
       }
 
-      // Update the report.
       const updatedResult = await client.query(
         `UPDATE public.waste_reports
          SET status = $1,
@@ -398,24 +421,24 @@ app.patch(
         [status, id]
       );
 
-      // Record the status change in the audit history.
       await client.query(
         `INSERT INTO public.waste_report_status_history (
            report_id,
            previous_status,
            new_status,
-           changed_by
+           changed_by,
+           rejection_reason
          )
-         VALUES ($1, $2, $3, $4)`,
+         VALUES ($1, $2, $3, $4, $5)`,
         [
           id,
           previousStatus,
           status,
-          req.user.id
+          req.user.id,
+          normalizedReason
         ]
       );
 
-      // Both operations succeed together.
       await client.query("COMMIT");
 
       return res.status(200).json({
@@ -448,6 +471,7 @@ app.patch(
     }
   }
 );
+
 
  // POST a new report to PostgreSQL
 
