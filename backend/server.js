@@ -317,6 +317,7 @@ app.get(
   }
 );
 
+
 app.patch(
   "/api/reports/:id/status",
   authenticateToken,
@@ -351,11 +352,14 @@ app.patch(
       });
     }
 
-    const client = await pool.connect();
+    let client;
 
     try {
+      client = await pool.connect();
+
       await client.query("BEGIN");
 
+      // Lock the report to prevent conflicting updates.
       const result = await client.query(
         `SELECT id, status
          FROM public.waste_reports
@@ -372,16 +376,19 @@ app.patch(
         });
       }
 
-      const currentStatus = result.rows[0].status;
+      const report = result.rows[0];
+      const previousStatus = report.status;
 
-      if (!allowedTransitions[currentStatus].includes(status)) {
+      // Validate the requested transition.
+      if (!allowedTransitions[previousStatus].includes(status)) {
         await client.query("ROLLBACK");
 
         return res.status(409).json({
-          error: `Cannot change report status from ${currentStatus} to ${status}`
+          error: `Cannot change report status from ${previousStatus} to ${status}`
         });
       }
 
+      // Update the report.
       const updatedResult = await client.query(
         `UPDATE public.waste_reports
          SET status = $1,
@@ -391,6 +398,24 @@ app.patch(
         [status, id]
       );
 
+      // Record the status change in the audit history.
+      await client.query(
+        `INSERT INTO public.waste_report_status_history (
+           report_id,
+           previous_status,
+           new_status,
+           changed_by
+         )
+         VALUES ($1, $2, $3, $4)`,
+        [
+          id,
+          previousStatus,
+          status,
+          req.user.id
+        ]
+      );
+
+      // Both operations succeed together.
       await client.query("COMMIT");
 
       return res.status(200).json({
@@ -399,7 +424,16 @@ app.patch(
       });
 
     } catch (error) {
-      await client.query("ROLLBACK");
+      if (client) {
+        try {
+          await client.query("ROLLBACK");
+        } catch (rollbackError) {
+          console.error(
+            "Transaction rollback failed:",
+            rollbackError.message
+          );
+        }
+      }
 
       console.error("Status update failed:", error.message);
 
@@ -408,10 +442,13 @@ app.patch(
       });
 
     } finally {
-      client.release();
+      if (client) {
+        client.release();
+      }
     }
   }
 );
+
  // POST a new report to PostgreSQL
 
 const receivePhotos = (req, res, next) => {
