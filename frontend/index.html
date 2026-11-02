@@ -1,0 +1,307 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="description"
+        content="EcoSync - Smart, connected waste management for cleaner communities."
+    >
+
+    <title>EcoSync | Smart Waste Management</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <main class="auth-layout">
+
+        <!-- LEFT BRANDING PANEL -->
+        <section class="brand-panel">
+
+            <div class="brand-content">
+
+                <a href="#" class="brand-logo">
+                    <span class="logo-icon">E</span>
+                    <span>Eco<span class="logo-light">Sync</span></span>
+                </a>
+
+                <div class="brand-message">
+
+                    <span class="eyebrow">
+                        <span class="status-dot"></span>
+                        SMARTER CITIES. CLEANER FUTURES.
+                    </span>
+
+                    <h1>
+                        Together, we can build
+                        <span>cleaner communities.</span>
+                    </h1>
+
+                    <p>
+                        A smarter way to report waste, monitor collection
+                        activities and create a cleaner environment for everyone.
+                    </p>
+
+                </div>
+
+                <!-- DECORATIVE DASHBOARD PREVIEW -->
+                <div class="visual-preview">
+
+                    <div class="preview-header">
+                        <div>
+                            <span class="preview-label">COMMUNITY OVERVIEW</span>
+                            <h3>Waste monitoring</h3>
+                        </div>
+
+                        <span class="live-indicator">
+                            <span></span> LIVE
+                        </span>
+                    </div>
+
+                    <div class="preview-map">
+
+                        <div class="map-road road-one"></div>
+                        <div class="map-road road-two"></div>
+                        <div class="map-road road-three"></div>
+
+                        <div class="map-block block-one"></div>
+                        <div class="map-block block-two"></div>
+                        <div class="map-block block-three"></div>
+                        <div class="map-block block-four"></div>
+
+                        <div class="map-marker marker-one">
+                            <span></span>
+                        </div>
+
+                        <div class="map-marker marker-two">
+                            <span></span>
+                        </div>
+
+                        <div class="map-marker marker-three">
+                            <span></span>
+                        </div>
+
+                        <div class="map-legend">
+                            <span class="legend-item">
+                                <i class="low"></i> Low
+                            </span>
+
+                            <span class="legend-item">
+                                <i class="medium"></i> Medium
+                            </span>
+
+                            <span class="legend-item">
+                                <i class="high"></i> High
+                            </span>
+                        </div>
+
+                    </div>
+
+                    <div class="preview-footer">
+                        <div>
+                            <strong>Real-time insights</strong>
+                            <span>Smarter waste collection decisions</span>
+                        </div>
+
+                        <span class="preview-arrow">↗</span>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="brand-footer">
+                <span>© 2026 EcoSync</span>
+                <span>Building a cleaner tomorrow.</span>
+            </div>
+
+        </section>
+
+
+        <!-- RIGHT AUTHENTICATION PANEL -->
+        <section class="auth-panel">
+
+            <div class="auth-container">
+
+                <div class="mobile-brand">
+                    <span class="logo-icon">E</span>
+                    <span>Eco<span class="logo-light">Sync</span></span>
+                </div>
+
+                <div class="auth-heading">
+                    <span class="eyebrow auth-eyebrow">
+                        WELCOME TO ECOSYNC
+                    </span>
+
+                    <h2 id="authTitle">Welcome back</h2>
+
+                    <p id="authSubtitle">
+                        Sign in to continue to your EcoSync account.
+                    </p>
+                </div>
+
+
+                <!-- LOGIN FORM -->
+                <form id="loginForm" class="auth-form">
+
+                    <div class="form-group">
+                        <label for="loginEmail">Email address</label>
+
+                        <input
+                            type="email"
+                            id="loginEmail"
+                            name="email"
+                            placeholder="you@example.com"
+                            autocomplete="email"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+
+                        <div class="label-row">
+                            <label for="loginPassword">Password</label>
+                        </div>
+
+                        <div class="password-wrapper">
+
+                            <input
+                                type="password"
+                                id="loginPassword"
+                                name="password"
+                                placeholder="Enter your password"
+                                autocomplete="current-password"
+                                required
+                            >
+
+                            <button
+                                type="button"
+                                class="password-toggle"
+                                data-target="loginPassword"
+                                aria-label="Show password"
+                            >
+                                Show
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                    <button type="submit" class="primary-button">
+                        <span>Sign in</span>
+                        <span class="button-arrow">→</span>
+                    </button>
+
+                    <p id="loginMessage" class="form-message" aria-live="polite"></p>
+
+                </form>
+
+
+                <!-- REGISTRATION FORM -->
+                <form id="registerForm" class="auth-form hidden">
+
+                    <div class="form-group">
+                        <label for="registerName">Full name</label>
+
+                        <input
+                            type="text"
+                            id="registerName"
+                            name="fullName"
+                            placeholder="Enter your full name"
+                            autocomplete="name"
+                            minlength="2"
+                            maxlength="150"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="registerEmail">Email address</label>
+
+                        <input
+                            type="email"
+                            id="registerEmail"
+                            name="email"
+                            placeholder="you@example.com"
+                            autocomplete="email"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="registerPassword">Password</label>
+
+                        <div class="password-wrapper">
+
+                            <input
+                                type="password"
+                                id="registerPassword"
+                                name="password"
+                                placeholder="Create a strong password"
+                                autocomplete="new-password"
+                                minlength="12"
+                                maxlength="72"
+                                required
+                            >
+
+                            <button
+                                type="button"
+                                class="password-toggle"
+                                data-target="registerPassword"
+                                aria-label="Show password"
+                            >
+                                Show
+                            </button>
+
+                        </div>
+
+                        <span class="input-hint">
+                            Use at least 12 characters.
+                        </span>
+                    </div>
+
+                    <button type="submit" class="primary-button">
+                        <span>Create account</span>
+                        <span class="button-arrow">→</span>
+                    </button>
+
+                    <p id="registerMessage" class="form-message" aria-live="polite"></p>
+
+                </form>
+
+
+                <div class="auth-switch">
+                    <span id="switchText">Don't have an account?</span>
+
+                    <button type="button" id="switchAuth">
+                        Create account
+                    </button>
+                </div>
+
+                <div class="security-note">
+                    <span class="security-icon">✓</span>
+                    Secure access to your EcoSync workspace
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <script src="js/app.js"></script>
+
+</body>
+</html>
