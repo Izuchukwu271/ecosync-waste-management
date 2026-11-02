@@ -900,17 +900,34 @@ app.get(
   }
 );
 
-app.get(
-  "/api/auth/admin-test",
-  authenticateToken,
-  authorizeRoles("system_administrator"),
-  (req, res) => {
-    res.json({
-      message: "Administrator access granted",
-      user: req.user,
-    });
+
+
+// GLOBAL ERROR HANDLING MIDDLEWARE
+app.use((err, req, res, next) => {
+  console.error("Unhandled application error:", {
+    message: err.message,
+    method: req.method,
+    path: req.path,
+  });
+
+  if (res.headersSent) {
+    return next(err);
   }
-);
+
+  const statusCode =
+    Number.isInteger(err.statusCode) &&
+    err.statusCode >= 400 &&
+    err.statusCode <= 599
+      ? err.statusCode
+      : 500;
+
+  res.status(statusCode).json({
+    error:
+      statusCode === 500
+        ? "An unexpected server error occurred"
+        : err.message,
+  });
+});
 
 
 // Start server
