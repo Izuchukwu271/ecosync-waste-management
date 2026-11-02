@@ -5,6 +5,7 @@ require("dotenv").config();
 
 const crypto = require("crypto");
 const helmet = require("helmet");
+const axios = require("axios");
 
 const pool = require("./config/db");
 const supabase = require("./config/supabase");
@@ -440,6 +441,182 @@ app.get(
   }
 );
 
+
+app.post(
+  "/api/routes/optimize",
+  authenticateToken,
+  async (req, res) => {
+    try {
+      // Only the collection team and administrators can plan routes.
+      if (
+        req.user.role !== "waste_management_team" &&
+        req.user.role !== "system_administrator"
+      ) {
+        return res.status(403).json({
+          error: "You do not have permission to optimize collection routes"
+        });
+      }
+
+      const { origin, reportIds } = req.body;
+
+      // Validate the starting location.
+      if (
+        !origin ||
+        !Number.isFinite(origin.longitude) ||
+        !Number.isFinite(origin.latitude) ||
+        origin.longitude < -180 ||
+        origin.longitude > 180 ||
+        origin.latitude < -90 ||
+        origin.latitude > 90
+      ) {
+        return res.status(400).json({
+          error: "A valid starting longitude and latitude are required"
+        });
+      }
+
+      // Require at least two waste collection destinations.
+      if (
+        !Array.isArray(reportIds) ||
+        reportIds.length < 2 ||
+        reportIds.length > 20
+      ) {
+        return res.status(400).json({
+          error: "Select between 2 and 20 waste reports"
+        });
+      }
+
+      const ids = reportIds.map(String);
+
+      if (
+        ids.some(id => !/^[1-9]\d*$/.test(id)) ||
+        new Set(ids).size !== ids.length
+      ) {
+        return res.status(400).json({
+          error: "Report IDs must be unique positive integers"
+        });
+      }
+
+      // Retrieve the selected reports from PostGIS.
+      const result = await pool.query(
+        `
+          SELECT
+            id,
+            waste_amount,
+            road_condition,
+            status,
+            ST_X(location::geometry) AS longitude,
+            ST_Y(location::geometry) AS latitude
+          FROM public.waste_reports
+          WHERE id = ANY($1::bigint[])
+            AND status IN ('pending', 'verified', 'assigned')
+          ORDER BY array_position($1::bigint[], id)
+        `,
+        [ids]
+      );
+
+      if (result.rows.length !== ids.length) {
+        return res.status(404).json({
+          error: "One or more reports were not found or are not awaiting collection"
+        });
+      }
+
+      // Origin first, followed by the selected waste locations.
+      const coordinates = [
+        `${origin.longitude},${origin.latitude}`,
+        ...result.rows.map(report =>
+          `${report.longitude},${report.latitude}`
+        )
+      ].join(";");
+
+      // Request an optimized multi-stop trip from OSRM.
+      const osrmResponse = await axios.get(
+        `https://router.project-osrm.org/trip/v1/driving/${coordinates}`,
+        {
+          params: {
+            roundtrip: false,
+            source: "first",
+            destination: "last",
+            overview: "full",
+            geometries: "geojson",
+            steps: false
+          },
+          timeout: 15000
+        }
+      );
+
+      const osrmData = osrmResponse.data;
+
+      if (
+        osrmData.code !== "Ok" ||
+        !osrmData.trips ||
+        osrmData.trips.length === 0
+      ) {
+        return res.status(422).json({
+          error: "OSRM could not calculate a route for these locations",
+          routingCode: osrmData.code
+        });
+      }
+
+      const trip = osrmData.trips[0];
+
+      // Convert OSRM's optimized waypoint order into report information.
+      const optimizedStops = osrmData.waypoints
+        .map((waypoint, inputIndex) => {
+          if (inputIndex === 0) {
+            return {
+              type: "origin",
+              order: waypoint.waypoint_index,
+              location: waypoint.location,
+              roadName: waypoint.name
+            };
+          }
+
+          const report = result.rows[inputIndex - 1];
+
+          return {
+            type: "waste_report",
+            reportId: report.id,
+            order: waypoint.waypoint_index,
+            location: waypoint.location,
+            roadName: waypoint.name,
+            wasteAmount: report.waste_amount,
+            roadCondition: report.road_condition,
+            status: report.status
+          };
+        })
+        .sort((a, b) => a.order - b.order);
+
+      // Warn the team about reported road problems.
+      const roadWarnings = result.rows
+        .filter(report =>
+          report.road_condition === "blocked" ||
+          report.road_condition === "damaged"
+        )
+        .map(report => ({
+          reportId: report.id,
+          roadCondition: report.road_condition,
+          warning: "This report has a road condition that requires verification"
+        }));
+
+      return res.status(200).json({
+        message: "Collection route optimized successfully",
+        routingEngine: "OSRM",
+        distanceMetres: trip.distance,
+        durationSeconds: trip.duration,
+        optimizedStops,
+        roadWarnings,
+        routeGeometry: trip.geometry
+      });
+
+    } catch (error) {
+      console.error("Route optimization failed:", error.message);
+
+      return res.status(502).json({
+        error: "Unable to calculate the collection route"
+      });
+    }
+  }
+);
 
 
  // GET one report by ID from PostgreSQL
