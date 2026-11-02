@@ -1,0 +1,473 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="description"
+        content="EcoSync Reporter Dashboard - Manage your community waste reports."
+    >
+
+    <title>Reporter Dashboard | EcoSync</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="css/reporter.css">
+</head>
+
+<body>
+
+    <div class="dashboard-layout">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar" id="sidebar">
+
+            <a href="reporter.html" class="brand-logo">
+                <span class="logo-icon">E</span>
+                <span>Eco<span class="logo-light">Sync</span></span>
+            </a>
+
+            <div class="sidebar-label">WORKSPACE</div>
+
+            <nav class="sidebar-nav">
+
+                <a href="#overview" class="nav-link active" data-page="overview">
+                    <span class="nav-icon">⌂</span>
+                    <span>Overview</span>
+                </a>
+
+                <a href="#report-waste" class="nav-link" data-page="report-waste">
+                    <span class="nav-icon">＋</span>
+                    <span>Report waste</span>
+                </a>
+
+                <a href="#my-reports" class="nav-link" data-page="my-reports">
+                    <span class="nav-icon">▤</span>
+                    <span>My reports</span>
+                </a>
+
+                <a href="#waste-map" class="nav-link" data-page="waste-map">
+                    <span class="nav-icon">⌖</span>
+                    <span>Waste map</span>
+                </a>
+
+            </nav>
+
+            <div class="sidebar-label account-label">ACCOUNT</div>
+
+            <nav class="sidebar-nav">
+
+                <a href="#profile" class="nav-link" data-page="profile">
+                    <span class="nav-icon">◎</span>
+                    <span>My profile</span>
+                </a>
+
+            </nav>
+
+            <div class="sidebar-bottom">
+
+                <div class="sidebar-help">
+                    <div class="help-icon">?</div>
+
+                    <div>
+                        <strong>Need assistance?</strong>
+                        <span>We're here to help.</span>
+                    </div>
+                </div>
+
+                <button type="button" class="logout-button" id="logoutButton">
+                    <span class="nav-icon">↪</span>
+                    <span>Sign out</span>
+                </button>
+
+                <div class="sidebar-footer">
+                    <span class="footer-dot"></span>
+                    EcoSync Community Portal
+                </div>
+
+            </div>
+
+        </aside>
+
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+
+            <!-- TOPBAR -->
+            <header class="topbar">
+
+                <div class="topbar-left">
+
+                    <button
+                        type="button"
+                        class="menu-button"
+                        id="menuButton"
+                        aria-label="Toggle navigation"
+                    >
+                        ☰
+                    </button>
+
+                    <div class="breadcrumb">
+                        <span>Workspace</span>
+                        <span class="breadcrumb-separator">/</span>
+                        <strong id="breadcrumbTitle">Overview</strong>
+                    </div>
+
+                </div>
+
+                <div class="topbar-right">
+
+                    <div class="system-status">
+                        <span class="status-dot"></span>
+                        System operational
+                    </div>
+
+                    <div class="user-menu">
+
+                        <div class="user-avatar" id="userAvatar">
+                            U
+                        </div>
+
+                        <div class="user-details">
+                            <strong id="userName">Loading...</strong>
+                            <span>Community Reporter</span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </header>
+
+
+            <!-- DASHBOARD PAGES -->
+            <div class="page-container">
+
+                <!-- OVERVIEW PAGE -->
+                <section class="dashboard-page active" id="overviewPage">
+
+                    <div class="welcome-section">
+
+                        <div>
+                            <span class="section-eyebrow">
+                                COMMUNITY DASHBOARD
+                            </span>
+
+                            <h1 id="welcomeTitle">
+                                Welcome back!
+                            </h1>
+
+                            <p>
+                                Every report brings us one step closer
+                                to a cleaner community.
+                            </p>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="primary-button"
+                            data-navigate="report-waste"
+                        >
+                            <span>＋</span>
+                            Report new waste
+                        </button>
+
+                    </div>
+
+
+                    <!-- STATISTICS -->
+                    <div class="stats-grid">
+
+                        <article class="stat-card">
+
+                            <div class="stat-card-top">
+                                <span>Total reports</span>
+                                <span class="stat-icon green">▤</span>
+                            </div>
+
+                            <strong class="stat-number" id="totalReports">—</strong>
+
+                            <span class="stat-description">
+                                All your submitted reports
+                            </span>
+
+                        </article>
+
+
+                        <article class="stat-card">
+
+                            <div class="stat-card-top">
+                                <span>Pending</span>
+                                <span class="stat-icon amber">◷</span>
+                            </div>
+
+                            <strong class="stat-number" id="pendingReports">—</strong>
+
+                            <span class="stat-description">
+                                Awaiting review
+                            </span>
+
+                        </article>
+
+
+                        <article class="stat-card">
+
+                            <div class="stat-card-top">
+                                <span>In progress</span>
+                                <span class="stat-icon blue">↗</span>
+                            </div>
+
+                            <strong class="stat-number" id="activeReports">—</strong>
+
+                            <span class="stat-description">
+                                Being handled by the team
+                            </span>
+
+                        </article>
+
+
+                        <article class="stat-card">
+
+                            <div class="stat-card-top">
+                                <span>Collected</span>
+                                <span class="stat-icon emerald">✓</span>
+                            </div>
+
+                            <strong class="stat-number" id="collectedReports">—</strong>
+
+                            <span class="stat-description">
+                                Successfully collected
+                            </span>
+
+                        </article>
+
+                    </div>
+
+
+                    <!-- MAIN DASHBOARD GRID -->
+                    <div class="dashboard-grid">
+
+                        <!-- RECENT REPORTS -->
+                        <section class="content-card reports-card">
+
+                            <div class="card-heading">
+
+                                <div>
+                                    <h2>Recent reports</h2>
+                                    <p>Track the latest updates on your submissions.</p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    class="text-button"
+                                    data-navigate="my-reports"
+                                >
+                                    View all →
+                                </button>
+
+                            </div>
+
+                            <div class="reports-list" id="recentReports">
+
+                                <div class="empty-state">
+                                    <div class="empty-icon">▤</div>
+                                    <strong>Loading your reports...</strong>
+                                    <span>Your latest submissions will appear here.</span>
+                                </div>
+
+                            </div>
+
+                        </section>
+
+
+                        <!-- QUICK ACTIONS -->
+                        <section class="content-card quick-actions-card">
+
+                            <div class="card-heading">
+                                <div>
+                                    <h2>Quick actions</h2>
+                                    <p>What would you like to do?</p>
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                class="quick-action"
+                                data-navigate="report-waste"
+                            >
+                                <span class="action-icon green">＋</span>
+
+                                <span class="action-text">
+                                    <strong>Submit a report</strong>
+                                    <small>Report a waste location in your area.</small>
+                                </span>
+
+                                <span class="action-arrow">→</span>
+                            </button>
+
+
+                            <button
+                                type="button"
+                                class="quick-action"
+                                data-navigate="my-reports"
+                            >
+                                <span class="action-icon blue">▤</span>
+
+                                <span class="action-text">
+                                    <strong>Track my reports</strong>
+                                    <small>Check the status of your submissions.</small>
+                                </span>
+
+                                <span class="action-arrow">→</span>
+                            </button>
+
+
+                            <button
+                                type="button"
+                                class="quick-action"
+                                data-navigate="waste-map"
+                            >
+                                <span class="action-icon amber">⌖</span>
+
+                                <span class="action-text">
+                                    <strong>Explore waste map</strong>
+                                    <small>Explore reported waste locations.</small>
+                                </span>
+
+                                <span class="action-arrow">→</span>
+                            </button>
+
+                        </section>
+
+                    </div>
+
+
+                    <!-- COMMUNITY MESSAGE -->
+                    <section class="community-banner">
+
+                        <div class="community-banner-content">
+                            <span class="banner-eyebrow">A CLEANER FUTURE STARTS HERE</span>
+
+                            <h2>Your community needs your voice.</h2>
+
+                            <p>
+                                See waste? Report it. Help collection teams
+                                identify problem areas and take action.
+                            </p>
+
+                            <button
+                                type="button"
+                                class="banner-button"
+                                data-navigate="report-waste"
+                            >
+                                Make a difference →
+                            </button>
+                        </div>
+
+                        <div class="banner-decoration">E</div>
+
+                    </section>
+
+                </section>
+
+
+                <!-- OTHER PAGES: CONTENT WILL BE ADDED IN LATER MILESTONES -->
+
+                <section class="dashboard-page" id="report-wastePage">
+                    <div class="page-heading">
+                        <span class="section-eyebrow">COMMUNITY CONTRIBUTION</span>
+                        <h1>Report waste</h1>
+                        <p>Help your community by reporting a waste location.</p>
+                    </div>
+                    <div class="content-card placeholder-card">
+                        <strong>Report submission</strong>
+                        <p>We'll build the report form and map location selector here.</p>
+                    </div>
+                </section>
+
+
+                <section class="dashboard-page" id="my-reportsPage">
+                    <div class="page-heading">
+                        <span class="section-eyebrow">YOUR SUBMISSIONS</span>
+                        <h1>My reports</h1>
+                        <p>Monitor the progress of your waste reports.</p>
+                    </div>
+                    <div class="content-card placeholder-card">
+                        <strong>Your reports</strong>
+                        <p>Your report history and status tracking will appear here.</p>
+                    </div>
+                </section>
+
+
+                <section class="dashboard-page" id="waste-mapPage">
+                    <div class="page-heading">
+                        <span class="section-eyebrow">COMMUNITY INTELLIGENCE</span>
+                        <h1>Waste map</h1>
+                        <p>Explore waste reports across the community.</p>
+                    </div>
+                    <div class="content-card placeholder-card">
+                        <strong>Interactive waste map</strong>
+                        <p>We'll integrate Leaflet and OpenStreetMap here.</p>
+                    </div>
+                </section>
+
+
+                <section class="dashboard-page" id="profilePage">
+                    <div class="page-heading">
+                        <span class="section-eyebrow">ACCOUNT SETTINGS</span>
+                        <h1>My profile</h1>
+                        <p>View your EcoSync account information.</p>
+                    </div>
+                    <div class="content-card placeholder-card">
+                        <strong>Profile information</strong>
+                        <p>Your account details will appear here.</p>
+                    </div>
+                </section>
+
+            </div>
+
+
+            <footer class="main-footer">
+                <span>© 2026 EcoSync. All rights reserved.</span>
+                <span>Building cleaner communities together.</span>
+            </footer>
+
+        </main>
+
+    </div>
+
+
+    <!-- Logout Confirmation Modal -->
+<div class="modal-overlay" id="logoutModal">
+    <div class="logout-modal">
+        <div class="logout-icon">
+            <i class="fas fa-sign-out-alt"></i>
+        </div>
+
+        <h2>Sign out?</h2>
+        <p>Are you sure you want to sign out of your EcoSync account?</p>
+
+        <div class="logout-actions">
+            <button class="cancel-logout" id="cancelLogout">
+                Cancel
+            </button>
+
+            <button class="confirm-logout" id="confirmLogout">
+                Yes, Sign Out
+            </button>
+        </div>
+    </div>
+</div>
+
+    <script src="js/reporter.js"></script>
+
+</body>
+</html>
