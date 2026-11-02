@@ -155,6 +155,290 @@ app.get(
   }
 );
 
+// get location on map
+
+app.get(
+  "/api/locations",
+  authenticateToken,
+  async (req, res) => {
+    try {
+      let query;
+      let values = [];
+
+      if (req.user.role === "reporter") {
+        query = `
+          SELECT
+            id,
+            waste_amount,
+            road_condition,
+            status,
+            created_at,
+            ST_AsGeoJSON(location::geometry)::json AS geometry
+          FROM public.waste_reports
+          WHERE reporter_id = $1
+          ORDER BY created_at DESC
+        `;
+
+        values = [req.user.id];
+
+      } else if (
+        req.user.role === "waste_management_team" ||
+        req.user.role === "system_administrator"
+      ) {
+        query = `
+          SELECT
+            id,
+            waste_amount,
+            road_condition,
+            status,
+            created_at,
+            ST_AsGeoJSON(location::geometry)::json AS geometry
+          FROM public.waste_reports
+          ORDER BY created_at DESC
+        `;
+
+      } else {
+        return res.status(403).json({
+          error: "You do not have permission to view locations"
+        });
+      }
+
+      const result = await pool.query(query, values);
+
+      const features = result.rows.map((report) => ({
+        type: "Feature",
+        geometry: report.geometry,
+        properties: {
+          id: report.id,
+          wasteAmount: report.waste_amount,
+          roadCondition: report.road_condition,
+          status: report.status,
+          createdAt: report.created_at
+        }
+      }));
+
+      return res.status(200).json({
+        type: "FeatureCollection",
+        count: features.length,
+        features
+      });
+
+    } catch (error) {
+      console.error("Failed to retrieve geographical locations:", error.message);
+
+      return res.status(500).json({
+        error: "Unable to retrieve geographical locations"
+      });
+    }
+  }
+);
+
+
+app.get(
+  "/api/locations/area",
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const { minLng, minLat, maxLng, maxLat } = req.query;
+
+      const coordinates = [minLng, minLat, maxLng, maxLat].map(Number);
+
+      if (
+        coordinates.some(value => !Number.isFinite(value)) ||
+        minLng === "" || minLat === "" || maxLng === "" || maxLat === "" ||
+        coordinates[0] >= coordinates[2] ||
+        coordinates[1] >= coordinates[3] ||
+        coordinates[0] < -180 || coordinates[2] > 180 ||
+        coordinates[1] < -90 || coordinates[3] > 90
+      ) {
+        return res.status(400).json({
+          error: "Provide valid map boundaries: minLng, minLat, maxLng, maxLat"
+        });
+      }
+
+      const [west, south, east, north] = coordinates;
+
+      let query = `
+        SELECT
+          id,
+          waste_amount,
+          road_condition,
+          status,
+          created_at,
+          ST_AsGeoJSON(location::geometry)::json AS geometry
+        FROM public.waste_reports
+        WHERE ST_Intersects(
+          location::geometry,
+          ST_MakeEnvelope($1, $2, $3, $4, 4326)
+        )
+      `;
+
+      const values = [west, south, east, north];
+
+      if (req.user.role === "reporter") {
+        query += ` AND reporter_id = $5`;
+        values.push(req.user.id);
+      } else if (
+        req.user.role !== "waste_management_team" &&
+        req.user.role !== "system_administrator"
+      ) {
+        return res.status(403).json({
+          error: "You do not have permission to view locations"
+        });
+      }
+
+      query += ` ORDER BY created_at DESC`;
+
+      const result = await pool.query(query, values);
+
+      const features = result.rows.map(report => ({
+        type: "Feature",
+        geometry: report.geometry,
+        properties: {
+          id: report.id,
+          wasteAmount: report.waste_amount,
+          roadCondition: report.road_condition,
+          status: report.status,
+          createdAt: report.created_at
+        }
+      }));
+
+      return res.status(200).json({
+        type: "FeatureCollection",
+        count: features.length,
+        features
+      });
+
+    } catch (error) {
+      console.error("Geographical area search failed:", error.message);
+
+      return res.status(500).json({
+        error: "Unable to retrieve locations in this area"
+      });
+    }
+  }
+);
+
+
+app.get(
+  "/api/locations/nearby",
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const { longitude, latitude, radius = "2000" } = req.query;
+
+      if (
+        longitude === undefined ||
+        latitude === undefined ||
+        !Number.isFinite(Number(longitude)) ||
+        !Number.isFinite(Number(latitude)) ||
+        !Number.isFinite(Number(radius)) ||
+        longitude.trim() === "" ||
+        latitude.trim() === "" ||
+        radius.trim() === ""
+      ) {
+        return res.status(400).json({
+          error: "Valid longitude, latitude and radius are required"
+        });
+      }
+
+      const lng = Number(longitude);
+      const lat = Number(latitude);
+      const searchRadius = Number(radius);
+
+      if (
+        lng < -180 || lng > 180 ||
+        lat < -90 || lat > 90 ||
+        searchRadius <= 0 || searchRadius > 50000
+      ) {
+        return res.status(400).json({
+          error: "Coordinates or radius are outside the allowed range"
+        });
+      }
+
+      if (
+        req.user.role !== "reporter" &&
+        req.user.role !== "waste_management_team" &&
+        req.user.role !== "system_administrator"
+      ) {
+        return res.status(403).json({
+          error: "You do not have permission to search locations"
+        });
+      }
+
+      const query = `
+        SELECT
+          id,
+          waste_amount,
+          road_condition,
+          status,
+          created_at,
+          ST_AsGeoJSON(location::geometry)::json AS geometry,
+          ROUND(
+            ST_Distance(
+              location,
+              ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
+            )::numeric,
+            2
+          ) AS distance_metres
+        FROM public.waste_reports
+        WHERE
+          ST_DWithin(
+            location,
+            ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
+            $3
+          )
+          AND status IN ('pending', 'verified', 'assigned')
+          AND (
+            $4::boolean = FALSE
+            OR reporter_id = $5
+          )
+        ORDER BY distance_metres ASC
+      `;
+
+      const isReporter = req.user.role === "reporter";
+
+      const result = await pool.query(query, [
+        lng,
+        lat,
+        searchRadius,
+        isReporter,
+        req.user.id
+      ]);
+
+      const features = result.rows.map(report => ({
+        type: "Feature",
+        geometry: report.geometry,
+        properties: {
+          id: report.id,
+          wasteAmount: report.waste_amount,
+          roadCondition: report.road_condition,
+          status: report.status,
+          distanceMetres: Number(report.distance_metres),
+          createdAt: report.created_at
+        }
+      }));
+
+      return res.status(200).json({
+        type: "FeatureCollection",
+        search: {
+          longitude: lng,
+          latitude: lat,
+          radiusMetres: searchRadius
+        },
+        count: features.length,
+        features
+      });
+
+    } catch (error) {
+      console.error("Nearby geographical search failed:", error.message);
+
+      return res.status(500).json({
+        error: "Unable to retrieve nearby waste locations"
+      });
+    }
+  }
+);
 
 
 
