@@ -7,6 +7,32 @@ const API_BASE_URL = "http://localhost:3000";
 
 const token = sessionStorage.getItem("ecosyncToken");
 
+let reporterReports = [];
+
+async function loadReporterReports() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/reports`, {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || "Unable to load reports.");
+        }
+
+        reporterReports = data.reports;
+
+        console.log("Reporter reports loaded:", reporterReports);
+
+    } catch (error) {
+        console.error("Failed to load reports:", error.message);
+    }
+}
+
 // ==========================================
 // 1. AUTHENTICATION PROTECTION
 // ==========================================
@@ -42,6 +68,9 @@ async function verifyReporterSession() {
 
         // Display authenticated user information
         displayUserInformation(user);
+
+       await loadReporterReports();
+
 
         // Start dashboard interactions
         initializeNavigation();
