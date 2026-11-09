@@ -381,17 +381,308 @@
 
                 <!-- OTHER PAGES: CONTENT WILL BE ADDED IN LATER MILESTONES -->
 
-                <section class="dashboard-page" id="report-wastePage">
-                    <div class="page-heading">
-                        <span class="section-eyebrow">COMMUNITY CONTRIBUTION</span>
-                        <h1>Report waste</h1>
-                        <p>Help your community by reporting a waste location.</p>
+               
+<section class="dashboard-page" id="report-wastePage">
+
+    <div class="page-heading">
+        <span class="section-eyebrow">COMMUNITY CONTRIBUTION</span>
+        <h1>Report waste</h1>
+        <p>Help keep your community clean. Reporting a waste problem only takes a few minutes.</p>
+    </div>
+
+    <div class="report-form-layout">
+
+        <!-- REPORT FORM -->
+        <div class="content-card waste-report-card">
+
+            <div class="report-form-heading">
+                <div>
+                    <span class="form-step-label">NEW REPORT</span>
+                    <h2>Waste report details</h2>
+                    <p>Please provide information about the waste problem.</p>
+                </div>
+                <div class="report-form-icon">♻</div>
+            </div>
+
+            <form id="wasteReportForm">
+
+                <!-- DESCRIPTION -->
+                <div class="form-field">
+                    <label for="wasteDescription">
+                        Describe the waste problem
+                        <span class="required-mark">*</span>
+                    </label>
+
+                    <textarea
+                        id="wasteDescription"
+                        name="description"
+                        placeholder="Example: A large pile of household waste has accumulated beside the road..."
+                        rows="5"
+                        minlength="10"
+                        maxlength="1000"
+                        required
+                    ></textarea>
+
+                    <div class="field-footer">
+                        <span>Describe what you see and where it is.</span>
+                        <span id="descriptionCounter">0 / 1000</span>
                     </div>
-                    <div class="content-card placeholder-card">
-                        <strong>Report submission</strong>
-                        <p>We'll build the report form and map location selector here.</p>
+                </div>
+
+                <!-- WASTE AMOUNT -->
+                <div class="form-field">
+                    <label>
+                        How much waste is there?
+                        <span class="required-mark">*</span>
+                    </label>
+
+                    <p class="field-description">
+                        Choose the option that best describes the amount of waste.
+                    </p>
+
+                    <div class="choice-grid waste-level-grid">
+
+                        <label class="choice-card">
+                            <input
+                                type="radio"
+                                name="wasteAmount"
+                                value="low"
+                                required
+                            >
+                            <span class="choice-card-content">
+                                <span class="choice-icon">🍃</span>
+                                <strong>Low</strong>
+                                <small>A small amount</small>
+                            </span>
+                        </label>
+
+                        <label class="choice-card">
+                            <input
+                                type="radio"
+                                name="wasteAmount"
+                                value="medium"
+                            >
+                            <span class="choice-card-content">
+                                <span class="choice-icon">🗑️</span>
+                                <strong>Medium</strong>
+                                <small>A moderate amount</small>
+                            </span>
+                        </label>
+
+                        <label class="choice-card">
+                            <input
+                                type="radio"
+                                name="wasteAmount"
+                                value="high"
+                            >
+                            <span class="choice-card-content">
+                                <span class="choice-icon">🚨</span>
+                                <strong>High</strong>
+                                <small>A large amount</small>
+                            </span>
+                        </label>
+
                     </div>
-                </section>
+                </div>
+
+                <!-- ROAD CONDITION -->
+                <div class="form-field">
+                    <label>
+                        What is the road condition?
+                        <span class="required-mark">*</span>
+                    </label>
+
+                    <p class="field-description">
+                        Tell us whether the road is accessible.
+                    </p>
+
+                    <div class="choice-grid road-condition-grid">
+
+                        <label class="choice-card">
+                            <input
+                                type="radio"
+                                name="roadCondition"
+                                value="good"
+                                required
+                            >
+                            <span class="choice-card-content">
+                                <strong>Good</strong>
+                                <small>Road is accessible</small>
+                            </span>
+                        </label>
+
+                        <label class="choice-card">
+                            <input
+                                type="radio"
+                                name="roadCondition"
+                                value="damaged"
+                            >
+                            <span class="choice-card-content">
+                                <strong>Damaged</strong>
+                                <small>Road has damage</small>
+                            </span>
+                        </label>
+
+                        <label class="choice-card">
+                            <input
+                                type="radio"
+                                name="roadCondition"
+                                value="blocked"
+                            >
+                            <span class="choice-card-content">
+                                <strong>Blocked</strong>
+                                <small>Road is blocked</small>
+                            </span>
+                        </label>
+
+                        <label class="choice-card">
+                            <input
+                                type="radio"
+                                name="roadCondition"
+                                value="unknown"
+                            >
+                            <span class="choice-card-content">
+                                <strong>Not sure</strong>
+                                <small>Condition is unknown</small>
+                            </span>
+                        </label>
+
+                    </div>
+                </div>
+
+                <!-- PHOTOS -->
+                <div class="form-field">
+                    <label for="wastePhotos">
+                        Add photographs
+                        <span class="optional-label">OPTIONAL</span>
+                    </label>
+
+                    <p class="field-description">
+                        Photographs help the waste management team understand the problem.
+                    </p>
+
+                    <label for="wastePhotos" class="photo-upload-area">
+                        <span class="photo-upload-icon">↑</span>
+                        <strong>Click to upload photographs</strong>
+                        <small>PNG, JPG or JPEG · Maximum 3 photographs · 5 MB each</small>
+                    </label>
+
+                    <input
+                        type="file"
+                        id="wastePhotos"
+                        name="photos"
+                        accept="image/png,image/jpeg,image/jpg"
+                        multiple
+                        hidden
+                    >
+
+                    <div id="photoPreview" class="photo-preview"></div>
+                </div>
+
+                <!-- AUTOMATIC LOCATION -->
+                <div class="form-field">
+                    <label>Report location</label>
+
+                    
+<div class="location-status-card" id="locationStatus">
+
+    <div class="location-status-icon">⌖</div>
+
+    <div class="location-status-content">
+        <strong id="locationStatusTitle">
+            Help us locate the waste
+        </strong>
+
+        <span id="locationStatusMessage">
+            EcoSync needs your location so the collection team can find the reported waste.
+        </span>
+    </div>
+
+    <button
+        type="button"
+        id="enableLocationButton"
+        class="enable-location-button"
+    >
+        Enable location →
+    </button>
+
+    <input type="hidden" id="reportLatitude" name="latitude">
+    <input type="hidden" id="reportLongitude" name="longitude">
+
+</div>
+
+
+                <!-- FORM FEEDBACK -->
+                <div id="reportFormMessage" class="report-form-message" role="status" aria-live="polite"></div>
+
+                <!-- SUBMIT -->
+                <div class="report-form-actions">
+                    <p>
+                        <span class="required-mark">*</span>
+                        Required information
+                    </p>
+
+                    <button type="submit" id="submitWasteReport" class="submit-report-button">
+                        <span>Submit report</span>
+                        <span>→</span>
+                    </button>
+                </div>
+
+            </form>
+        </div>
+
+        <!-- INFORMATION PANEL -->
+        <aside class="report-guidance-card">
+
+            <div class="guidance-icon">🌍</div>
+
+            <h3>You're helping your community</h3>
+
+            <p>
+                Every report helps the waste management team identify
+                affected areas and organize collection activities.
+            </p>
+
+            <div class="guidance-divider"></div>
+
+            <div class="guidance-item">
+                <span>01</span>
+                <div>
+                    <strong>Submit your report</strong>
+                    <small>Tell us about the waste problem.</small>
+                </div>
+            </div>
+
+            <div class="guidance-item">
+                <span>02</span>
+                <div>
+                    <strong>Team reviews it</strong>
+                    <small>The collection team receives your report.</small>
+                </div>
+            </div>
+
+            <div class="guidance-item">
+                <span>03</span>
+                <div>
+                    <strong>Collection takes place</strong>
+                    <small>Your report helps organize cleanup activities.</small>
+                </div>
+            </div>
+
+            <div class="guidance-note">
+                <strong>📍 Location matters</strong>
+                <p>
+                    Please allow location access when requested so the
+                    collection team can find the reported waste.
+                </p>
+            </div>
+
+        </aside>
+
+    </div>
+
+</section>
+
 
 
                 <section class="dashboard-page" id="my-reportsPage">

@@ -702,8 +702,391 @@ logoutModal.addEventListener("click", (event) => {
     }
 });
 
+
 // ==========================================
-// 6. START APPLICATION
+// 6. REPORT DESCRIPTION CHARACTER COUNTER
+// ==========================================
+
+const wasteDescription = document.getElementById("wasteDescription");
+const descriptionCounter = document.getElementById("descriptionCounter");
+
+wasteDescription.addEventListener("input", () => {
+    const currentLength = wasteDescription.value.length;
+
+    descriptionCounter.textContent = `${currentLength} / 1000`;
+});
+
+
+// ==========================================
+// 7. REPORT PHOTOGRAPH UPLOAD
+// ==========================================
+
+const wastePhotosInput = document.getElementById("wastePhotos");
+const photoPreview = document.getElementById("photoPreview");
+const reportFormMessage = document.getElementById("reportFormMessage");
+
+let selectedWastePhotos = [];
+
+wastePhotosInput.addEventListener("change", () => {
+    const newFiles = Array.from(wastePhotosInput.files);
+
+    newFiles.forEach(file => {
+
+        // Check photograph type
+        const allowedTypes = [
+            "image/jpeg",
+            "image/png"
+        ];
+
+        if (!allowedTypes.includes(file.type)) {
+            showPhotoMessage(`${file.name} is not a supported image.`);
+            return;
+        }
+
+        // Check photograph size (5 MB)
+        if (file.size > 5 * 1024 * 1024) {
+            showPhotoMessage(`${file.name} exceeds the 5 MB limit.`);
+            return;
+        }
+
+        // Maximum three photographs
+        if (selectedWastePhotos.length >= 3) {
+            showPhotoMessage("You can upload a maximum of 3 photographs.");
+            return;
+        }
+
+        selectedWastePhotos.push(file);
+    });
+
+    renderPhotoPreviews();
+
+    // Reset input so the same photograph can be selected again
+    wastePhotosInput.value = "";
+});
+
+function renderPhotoPreviews() {
+
+    photoPreview.innerHTML = "";
+
+    selectedWastePhotos.forEach((file, index) => {
+
+        const imageURL = URL.createObjectURL(file);
+
+        const previewItem = document.createElement("div");
+        previewItem.className = "photo-preview-item";
+
+        previewItem.innerHTML = `
+            <img
+                src="${imageURL}"
+                alt="Selected waste photograph ${index + 1}"
+            >
+
+            <button
+                type="button"
+                class="remove-photo-button"
+                aria-label="Remove photograph ${index + 1}"
+                data-photo-index="${index}"
+            >
+                ×
+            </button>
+
+            <span class="photo-preview-name">
+                ${escapeHTML(file.name)}
+            </span>
+        `;
+
+        photoPreview.appendChild(previewItem);
+    });
+}
+
+// Remove an individual photograph
+photoPreview.addEventListener("click", event => {
+
+    const removeButton = event.target.closest("[data-photo-index]");
+
+    if (!removeButton) return;
+
+    const index = Number(removeButton.dataset.photoIndex);
+
+    selectedWastePhotos.splice(index, 1);
+
+    renderPhotoPreviews();
+});
+
+function showPhotoMessage(message) {
+
+    reportFormMessage.textContent = message;
+    reportFormMessage.className = "report-form-message error";
+}
+
+ // ==========================================
+// 9. REPORTER LOCATION DETECTION
+// ==========================================
+
+const reportLatitude = document.getElementById("reportLatitude");
+const reportLongitude = document.getElementById("reportLongitude");
+
+const locationStatus = document.getElementById("locationStatus");
+const locationStatusTitle = document.getElementById("locationStatusTitle");
+const locationStatusMessage = document.getElementById("locationStatusMessage");
+
+const enableLocationButton = document.getElementById("enableLocationButton");
+
+
+function updateLocationStatus(state, title, message) {
+    locationStatus.classList.remove(
+        "location-detecting",
+        "location-success",
+        "location-error"
+    );
+
+    locationStatus.classList.add(`location-${state}`);
+
+    locationStatusTitle.textContent = title;
+    locationStatusMessage.textContent = message;
+}
+
+
+function detectReporterLocation() {
+
+    if (!navigator.geolocation) {
+        updateLocationStatus(
+            "error",
+            "Location unavailable",
+            "Your browser does not support location detection."
+        );
+
+        enableLocationButton.disabled = true;
+        return;
+    }
+
+    enableLocationButton.disabled = true;
+    enableLocationButton.textContent = "Detecting...";
+
+    updateLocationStatus(
+        "detecting",
+        "Detecting your location...",
+        "Please allow location access in your browser."
+    );
+
+    navigator.geolocation.getCurrentPosition(
+
+        position => {
+
+            reportLatitude.value = position.coords.latitude;
+            reportLongitude.value = position.coords.longitude;
+
+            updateLocationStatus(
+                "success",
+                "Location confirmed",
+                "Your location has been detected successfully."
+            );
+
+            enableLocationButton.textContent = "Location confirmed";
+        },
+
+        error => {
+
+            reportLatitude.value = "";
+            reportLongitude.value = "";
+
+            let errorMessage = "We could not detect your location. Please try again.";
+
+            if (error.code === error.PERMISSION_DENIED) {
+                errorMessage = "Location permission was denied. Please allow location access in your browser settings.";
+            } else if (error.code === error.POSITION_UNAVAILABLE) {
+                errorMessage = "Your location is currently unavailable. Please check your device location settings.";
+            } else if (error.code === error.TIMEOUT) {
+                errorMessage = "Location detection took too long. Please try again.";
+            }
+
+            updateLocationStatus(
+                "error",
+                "Location detection failed",
+                errorMessage
+            );
+
+            enableLocationButton.disabled = false;
+            enableLocationButton.textContent = "Try again →";
+        },
+
+        {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0
+        }
+    );
+}
+
+
+// Request location only after the reporter clicks the button.
+enableLocationButton.addEventListener("click", detectReporterLocation);
+
+// ==========================================
+// 10. WASTE REPORT SUBMISSION
+// ==========================================
+
+const wasteReportForm = document.getElementById("wasteReportForm");
+const submitReportButton = document.getElementById("submitWasteReport");
+
+wasteReportForm.addEventListener("submit", async (event) => {
+
+    event.preventDefault();
+
+    // Get the selected waste amount.
+    const wasteAmount = document.querySelector(
+        'input[name="wasteAmount"]:checked'
+    );
+
+    // Get the selected road condition.
+    const roadCondition = document.querySelector(
+        'input[name="roadCondition"]:checked'
+    );
+
+    // Get the description.
+    const description = wasteDescription.value.trim();
+
+    // Check that the reporter has detected their location.
+    if (!reportLatitude.value || !reportLongitude.value) {
+        reportFormMessage.textContent =
+            "Please enable location detection before submitting your report.";
+
+        reportFormMessage.className = "report-form-message error";
+        return;
+    }
+
+    // Check the required selections.
+    if (!wasteAmount || !roadCondition) {
+        reportFormMessage.textContent =
+            "Please select the waste amount and road condition.";
+
+        reportFormMessage.className = "report-form-message error";
+        return;
+    }
+
+    // Check the description.
+    if (description.length < 10) {
+        reportFormMessage.textContent =
+            "Please provide a description of at least 10 characters.";
+
+        reportFormMessage.className = "report-form-message error";
+        return;
+    }
+
+    // ==========================================
+// PREPARE REPORT DATA
+// ==========================================
+
+// Create a FormData object for text fields and photographs.
+const reportData = new FormData();
+
+// Add the report information.
+reportData.append("description", description);
+reportData.append("wasteAmount", wasteAmount.value);
+reportData.append("roadCondition", roadCondition.value);
+
+// Add the automatically detected GPS coordinates.
+reportData.append("latitude", reportLatitude.value);
+reportData.append("longitude", reportLongitude.value);
+
+// Attach the selected photographs.
+selectedWastePhotos.forEach(photo => {
+    reportData.append("photos", photo);
+});
+
+// Get the reporter's authentication token.
+const token = sessionStorage.getItem("ecosyncToken");
+
+// Make sure the reporter is authenticated.
+if (!token) {
+    reportFormMessage.textContent =
+        "Your session has expired. Please log in again.";
+
+    reportFormMessage.className = "report-form-message error";
+    return;
+}
+
+// ==========================================
+// SEND REPORT TO THE BACKEND
+// ==========================================
+
+try {
+
+    submitReportButton.disabled = true;
+    submitReportButton.textContent = "Submitting report...";
+
+    reportFormMessage.textContent = "Sending your report...";
+    reportFormMessage.className = "report-form-message";
+
+    const response = await fetch(`${API_BASE_URL}/api/reports`, {
+        method: "POST",
+
+        headers: {
+            Authorization: `Bearer ${token}`
+        },
+
+        body: reportData
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+        throw new Error(result.error || "Failed to submit your report.");
+    }
+
+    reportFormMessage.textContent =
+        result.message || "Your waste report was submitted successfully!";
+
+    reportFormMessage.className = "report-form-message success";
+
+    // Clear the form after successful submission.
+ wasteReportForm.reset();
+
+ // Clear selected photographs.
+ selectedWastePhotos = [];
+ renderPhotoPreviews();
+
+ // Clear stored GPS coordinates.
+ reportLatitude.value = "";
+ reportLongitude.value = "";
+
+ // Reset the location card.
+updateLocationStatus(
+    "idle",
+    "Help us locate the waste",
+    "Enable location so the collection team can find the reported waste."
+);
+
+// Restore the location button.
+enableLocationButton.disabled = false;
+enableLocationButton.textContent = "Enable location →";
+
+// Reset the description counter.
+descriptionCounter.textContent = "0 / 1000";
+
+// Refresh the reporter's reports.
+await loadReporterReports();
+
+} catch (error) {
+
+    console.error("Report submission error:", error);
+
+    reportFormMessage.textContent =
+        error.message || "Something went wrong. Please try again.";
+
+    reportFormMessage.className = "report-form-message error";
+
+} finally {
+
+    submitReportButton.disabled = false;
+    submitReportButton.textContent = "Submit report";
+
+}
+
+});
+
+// ==========================================
+// 9. START APPLICATION
 // ==========================================
 
 verifyReporterSession();

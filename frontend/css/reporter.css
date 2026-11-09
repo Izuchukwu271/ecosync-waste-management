@@ -1916,3 +1916,651 @@ body.modal-open {
         flex-direction: column;
     }
 }
+
+/* ==========================================
+   ECOSYNC - REPORT WASTE INTERFACE
+========================================== */
+
+.report-form-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 24px;
+    align-items: start;
+}
+
+.waste-report-card {
+    padding: 32px;
+    border: 1px solid #e7eee9;
+    border-radius: 18px;
+    background: #ffffff;
+}
+
+.report-form-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    padding-bottom: 25px;
+    margin-bottom: 28px;
+    border-bottom: 1px solid #edf1ee;
+}
+
+.form-step-label {
+    display: inline-block;
+    color: #16834a;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    margin-bottom: 9px;
+}
+
+.report-form-heading h2 {
+    color: #17251d;
+    font-size: 22px;
+    font-weight: 750;
+    margin: 0 0 8px;
+}
+
+.report-form-heading p,
+.field-description {
+    color: #7b8980;
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.report-form-icon {
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    border-radius: 14px;
+    background: #eaf6ee;
+    color: #16834a;
+    font-size: 25px;
+}
+
+.form-field {
+    margin-bottom: 29px;
+}
+
+.form-field > label:first-child {
+    display: block;
+    color: #26372d;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.required-mark {
+    color: #dc5656;
+}
+
+.optional-label {
+    color: #8b978f;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    margin-left: 7px;
+}
+
+#report-wastePage textarea {
+    width: 100%;
+    min-height: 125px;
+    padding: 15px;
+    resize: vertical;
+    border: 1px solid #dfe8e2;
+    border-radius: 11px;
+    background: #fbfdfb;
+    color: #25352b;
+    font: inherit;
+    font-size: 13px;
+    line-height: 1.6;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#report-wastePage textarea:focus {
+    border-color: #26985c;
+    box-shadow: 0 0 0 3px rgba(38, 152, 92, 0.10);
+    background: #ffffff;
+}
+
+#report-wastePage textarea::placeholder {
+    color: #a5afa8;
+}
+
+.field-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 8px;
+    color: #929e96;
+    font-size: 11px;
+}
+
+.field-description {
+    margin-bottom: 13px;
+}
+
+/* Selection cards */
+
+.choice-grid {
+    display: grid;
+    gap: 12px;
+}
+
+.waste-level-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.road-condition-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.choice-card {
+    position: relative;
+    display: block;
+    cursor: pointer;
+    margin: 0;
+}
+
+.choice-card input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.choice-card-content {
+    min-height: 94px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    padding: 15px;
+    border: 1px solid #e2eae4;
+    border-radius: 12px;
+    background: #fbfdfb;
+    transition: 0.2s ease;
+}
+
+.choice-card-content strong {
+    color: #293a30;
+    font-size: 13px;
+}
+
+.choice-card-content small {
+    color: #87938b;
+    font-size: 11px;
+}
+
+.choice-icon {
+    font-size: 20px;
+    margin-bottom: 2px;
+}
+
+.choice-card:hover .choice-card-content {
+    border-color: #7bc59a;
+    background: #f5fbf6;
+}
+
+.choice-card input:checked + .choice-card-content {
+    border: 1.5px solid #26985c;
+    background: #edf8f0;
+    box-shadow: 0 0 0 3px rgba(38, 152, 92, 0.08);
+}
+
+.choice-card input:focus-visible + .choice-card-content {
+    outline: 3px solid rgba(38, 152, 92, 0.25);
+    outline-offset: 3px;
+}
+
+/* Photograph upload */
+
+.photo-upload-area {
+    min-height: 150px;
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 22px;
+    border: 1.5px dashed #b9d9c3;
+    border-radius: 13px;
+    background: #f8fcf9;
+    cursor: pointer;
+    text-align: center;
+    transition: 0.2s ease;
+}
+
+.photo-upload-area:hover {
+    border-color: #26985c;
+    background: #eff8f1;
+}
+
+.photo-upload-icon {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #e5f3e9;
+    color: #16834a;
+    font-size: 22px;
+}
+
+.photo-upload-area strong {
+    color: #34473a;
+    font-size: 13px;
+}
+
+.photo-upload-area small {
+    color: #929e96;
+    font-size: 11px;
+}
+
+.photo-preview {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+}
+
+/* Automatic location */
+
+.location-status-card {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 16px;
+    border: 1px solid #dfeae2;
+    border-radius: 12px;
+    background: #f8fbf8;
+}
+
+.location-status-icon {
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    border-radius: 11px;
+    background: #e8f4eb;
+    color: #16834a;
+    font-size: 22px;
+}
+
+.location-status-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.location-status-content strong {
+    color: #35463a;
+    font-size: 12px;
+}
+
+.location-status-content span {
+    color: #87938b;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.location-indicator {
+    color: #d69b36;
+    font-size: 12px;
+}
+
+/* Form feedback and submission */
+
+.report-form-message {
+    display: none;
+    padding: 13px 15px;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.report-form-message.success {
+    display: block;
+    color: #176b3c;
+    background: #eaf7ee;
+    border: 1px solid #ccebd5;
+}
+
+.report-form-message.error {
+    display: block;
+    color: #a53232;
+    background: #fff0f0;
+    border: 1px solid #f4d0d0;
+}
+
+.report-form-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    padding-top: 22px;
+    border-top: 1px solid #edf1ee;
+}
+
+.report-form-actions p {
+    color: #87938b;
+    font-size: 11px;
+    margin: 0;
+}
+
+.submit-report-button {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    padding: 0 22px;
+    border: none;
+    border-radius: 10px;
+    background: #16834a;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.submit-report-button:hover {
+    background: #116b3b;
+    transform: translateY(-1px);
+}
+
+.submit-report-button:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Guidance panel */
+
+.report-guidance-card {
+    padding: 25px;
+    border: 1px solid #e3ede5;
+    border-radius: 17px;
+    background: linear-gradient(160deg, #f3faf4, #ffffff);
+}
+
+.guidance-icon {
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    background: #e2f2e6;
+    font-size: 24px;
+    margin-bottom: 18px;
+}
+
+.report-guidance-card h3 {
+    color: #263b2c;
+    font-size: 17px;
+    line-height: 1.4;
+    margin: 0 0 10px;
+}
+
+.report-guidance-card > p {
+    color: #7c8b80;
+    font-size: 12px;
+    line-height: 1.8;
+    margin: 0;
+}
+
+.guidance-divider {
+    height: 1px;
+    background: #e2ebe4;
+    margin: 23px 0;
+}
+
+.guidance-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 13px;
+    margin-bottom: 21px;
+}
+
+.guidance-item > span {
+    width: 29px;
+    height: 29px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    border-radius: 9px;
+    background: #e4f3e8;
+    color: #16834a;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.guidance-item div {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.guidance-item strong {
+    color: #34463a;
+    font-size: 12px;
+}
+
+.guidance-item small {
+    color: #89958d;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.guidance-note {
+    padding: 14px;
+    border-radius: 11px;
+    background: #eaf5ed;
+}
+
+.guidance-note strong {
+    color: #236b40;
+    font-size: 12px;
+}
+
+.guidance-note p {
+    color: #718779;
+    font-size: 11px;
+    line-height: 1.7;
+    margin: 7px 0 0;
+}
+
+/* Responsive layout */
+
+@media (max-width: 1050px) {
+    .report-form-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .report-guidance-card {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 15px;
+    }
+
+    .guidance-divider {
+        display: none;
+    }
+
+    .guidance-note {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 600px) {
+    .waste-report-card {
+        padding: 20px 16px;
+    }
+
+    .report-form-heading h2 {
+        font-size: 19px;
+    }
+
+    .waste-level-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .choice-card-content {
+        min-height: 75px;
+    }
+
+    .report-guidance-card {
+        display: block;
+    }
+
+    .report-form-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .submit-report-button {
+        width: 100%;
+    }
+}
+
+
+
+/* ==========================================
+   ECOSYNC - PHOTOGRAPH PREVIEW FIX
+========================================== */
+
+.photo-preview {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+    width: 100%;
+    min-width: 0;
+}
+
+.photo-preview-item {
+    position: relative;
+    min-width: 0;
+    height: 155px;
+    overflow: hidden;
+    border: 1px solid #e1ebe4;
+    border-radius: 12px;
+    background: #f5f9f6;
+}
+
+.photo-preview-item img {
+    display: block;
+    width: 100%;
+    height: 115px;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 11px 11px 0 0;
+}
+
+.remove-photo-button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 27px;
+    height: 27px;
+    display: grid;
+    place-items: center;
+    border: none;
+    border-radius: 50%;
+    background: rgba(20, 35, 26, 0.85);
+    color: white;
+    font-size: 19px;
+    cursor: pointer;
+}
+
+.remove-photo-button:hover {
+    background: #d93636;
+}
+
+.photo-preview-name {
+    display: block;
+    padding: 7px 9px;
+    overflow: hidden;
+    color: #647369;
+    font-size: 10px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+@media (max-width: 600px) {
+    .photo-preview {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .photo-preview-item {
+        height: 145px;
+    }
+
+    .photo-preview-item img {
+        height: 105px;
+    }
+}
+
+/* ==========================================
+   LOCATION PERMISSION BUTTON
+========================================== */
+
+.enable-location-button {
+    border: none;
+    outline: none;
+    background: #e5f4eb;
+    color: #087c45;
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.25s ease;
+}
+
+.enable-location-button:hover {
+    background: #087c45;
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.enable-location-button:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.location-status-card.location-detecting {
+    border-color: #e8c878;
+    background: #fffdf6;
+}
+
+.location-status-card.location-success {
+    border-color: #a7dfbd;
+    background: #f3fbf6;
+}
+
+.location-status-card.location-error {
+    border-color: #efb5b5;
+    background: #fff8f8;
+}
+
+@media (max-width: 600px) {
+    .location-status-card {
+        flex-wrap: wrap;
+        gap: 14px;
+    }
+
+    .enable-location-button {
+        width: 100%;
+    }
+}
