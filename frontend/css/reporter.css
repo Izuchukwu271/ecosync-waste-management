@@ -1063,3 +1063,130 @@ a:focus-visible {
         flex-direction: column-reverse;
     }
 }
+
+/* Recent Reports Table */
+
+.recent-reports-table {
+    width: 100%;
+}
+
+.recent-reports-header,
+.recent-report-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1.2fr;
+    align-items: center;
+    gap: 16px;
+}
+
+.recent-reports-header {
+    padding: 16px 20px;
+    background: #f7faf8;
+    color: #83928a;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.7px;
+}
+
+.recent-report-row {
+    padding: 18px 20px;
+    border-bottom: 1px solid #edf1ee;
+    font-size: 12px;
+}
+
+.recent-report-row:last-child {
+    border-bottom: none;
+}
+
+.recent-report-details {
+    min-width: 0;
+}
+
+.recent-report-details strong {
+    display: block;
+    color: #244536;
+    font-size: 12px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.recent-report-details small {
+    display: block;
+    margin-top: 5px;
+    color: #9aa79f;
+}
+
+.waste-level,
+.report-status {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.waste-level.low {
+    background: #e8f6ed;
+    color: #25834b;
+}
+
+.waste-level.medium {
+    background: #fff4dc;
+    color: #a56a08;
+}
+
+.waste-level.high {
+    background: #ffebeb;
+    color: #c34343;
+}
+
+.report-status.pending {
+    background: #fff4dc;
+    color: #a56a08;
+}
+
+.report-status.verified {
+    background: #e8f1ff;
+    color: #3972bd;
+}
+
+.report-status.assigned {
+    background: #f0eaff;
+    color: #7954b5;
+}
+
+.report-status.collected {
+    background: #e8f6ed;
+    color: #25834b;
+}
+
+.report-status.rejected {
+    background: #ffebeb;
+    color: #c34343;
+}
+
+.report-date {
+    color: #718078;
+    white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+    .recent-reports-header {
+        display: none;
+    }
+
+    .recent-report-row {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        padding: 18px 14px;
+    }
+
+    .recent-report-details {
+        grid-column: 1 / -1;
+    }
+
+    .report-date {
+        white-space: normal;
+    }
+}
+

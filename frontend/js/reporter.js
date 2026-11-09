@@ -26,12 +26,137 @@ async function loadReporterReports() {
 
         reporterReports = data.reports;
 
+        renderReporterStatistics();
+        renderRecentReports();
+
         console.log("Reporter reports loaded:", reporterReports);
 
     } catch (error) {
         console.error("Failed to load reports:", error.message);
     }
 }
+
+function renderReporterStatistics() {
+    const total = reporterReports.length;
+
+    const pending = reporterReports.filter(
+        report => report.status === "pending"
+    ).length;
+
+    const active = reporterReports.filter(
+        report => ["verified", "assigned"].includes(report.status)
+    ).length;
+
+    const collected = reporterReports.filter(
+        report => report.status === "collected"
+    ).length;
+
+    document.getElementById("totalReports").textContent = total;
+    document.getElementById("pendingReports").textContent = pending;
+    document.getElementById("activeReports").textContent = active;
+    document.getElementById("collectedReports").textContent = collected;
+}
+
+
+function renderRecentReports() {
+    const container = document.getElementById("recentReports");
+
+    if (!reporterReports.length) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">▤</div>
+                <strong>No reports yet</strong>
+                <span>Your waste reports will appear here when you submit them.</span>
+            </div>
+        `;
+        return;
+    }
+
+    const recentReports = reporterReports.slice(0, 5);
+
+    container.innerHTML = `
+        <div class="recent-reports-table">
+            <div class="recent-reports-header">
+                <span>REPORT DETAILS</span>
+                <span>WASTE LEVEL</span>
+                <span>STATUS</span>
+                <span>DATE SUBMITTED</span>
+            </div>
+
+            ${recentReports.map(report => {
+                const date = new Date(report.createdAt);
+
+                const formattedDate = date.toLocaleDateString(
+                    "en-GB",
+                    {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric"
+                    }
+                );
+
+                const statusLabels = {
+                    pending: "Pending",
+                    verified: "Verified",
+                    assigned: "Assigned",
+                    collected: "Collected",
+                    rejected: "Rejected"
+                };
+
+                const description = escapeHTML(
+                    report.description || "Waste report"
+                );
+
+                const wasteAmount = escapeHTML(
+                    report.wasteAmount || "unknown"
+                );
+
+                const status = String(report.status || "pending")
+                    .toLowerCase();
+
+                return `
+                    <div class="recent-report-row">
+                        <div class="recent-report-details">
+                            <strong>${description}</strong>
+                            <small>Report #${escapeHTML(String(report.id))}</small>
+                        </div>
+
+                        <div>
+                            <span class="waste-level ${wasteAmount.toLowerCase()}">
+                                ${wasteAmount.charAt(0).toUpperCase() + wasteAmount.slice(1)}
+                            </span>
+                        </div>
+
+                        <div>
+                            <span class="report-status ${status}">
+                                ${statusLabels[status] || "Unknown"}
+                            </span>
+                        </div>
+
+                        <div class="report-date">
+                            ${formattedDate}
+                        </div>
+                    </div>
+                `;
+            }).join("")}
+        </div>
+    `;
+}
+
+function escapeHTML(value) {
+    return String(value).replace(/[&<>"']/g, character => {
+        const entities = {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        };
+
+        return entities[character];
+    });
+}
+
 
 // ==========================================
 // 1. AUTHENTICATION PROTECTION
