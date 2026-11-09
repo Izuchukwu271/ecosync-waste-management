@@ -395,15 +395,95 @@
 
 
                 <section class="dashboard-page" id="my-reportsPage">
-                    <div class="page-heading">
-                        <span class="section-eyebrow">YOUR SUBMISSIONS</span>
-                        <h1>My reports</h1>
-                        <p>Monitor the progress of your waste reports.</p>
+
+                    <div class="page-heading reports-page-heading">
+                        <div>
+                            <span class="section-eyebrow">YOUR SUBMISSIONS</span>
+                            <h1>My reports</h1>
+                            <p>Track progress and stay up to date with every waste report you've submitted.</p>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="primary-button reports-new-button"
+                            data-navigate="report-waste"
+                        >
+                            <span>＋</span>
+                            Submit a report
+                        </button>
                     </div>
-                    <div class="content-card placeholder-card">
-                        <strong>Your reports</strong>
-                        <p>Your report history and status tracking will appear here.</p>
-                    </div>
+
+                    <!-- REPORT HISTORY -->
+                    <section class="content-card report-history-card" aria-labelledby="reportHistoryTitle">
+
+                        <div class="report-history-heading">
+                            <div class="report-history-title-group">
+                                <span class="report-history-icon" aria-hidden="true">▤</span>
+                                <div>
+                                    <h2 id="reportHistoryTitle">Report history</h2>
+                                    <p>All your submissions in one place. Select a report to view its details.</p>
+                                </div>
+                            </div>
+
+                            <span class="report-count" id="reportHistoryCount">
+                                0 reports
+                            </span>
+                        </div>
+
+                        <div class="report-history-toolbar">
+                            <label class="report-search" for="reportSearch">
+                                <span aria-hidden="true">⌕</span>
+                                <input
+                                    type="search"
+                                    id="reportSearch"
+                                    placeholder="Search by description or report ID"
+                                    autocomplete="off"
+                                >
+                            </label>
+
+                            <label class="report-filter" for="reportStatusFilter">
+                                <span>Status</span>
+                                <select id="reportStatusFilter">
+                                    <option value="all">All statuses</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="verified">Verified</option>
+                                    <option value="assigned">Assigned</option>
+                                    <option value="collected">Collected</option>
+                                    <option value="rejected">Rejected</option>
+                                </select>
+                            </label>
+                        </div>
+
+                        <div class="report-history-table-wrapper">
+                            <table class="report-history-table">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">REPORT DETAILS</th>
+                                        <th scope="col">WASTE LEVEL</th>
+                                        <th scope="col">ROAD CONDITION</th>
+                                        <th scope="col">CURRENT STATUS</th>
+                                        <th scope="col">DATE SUBMITTED</th>
+                                        <th scope="col" class="report-action-heading">ACTION</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody id="allReportsTableBody">
+                                    <tr>
+                                        <td colspan="6" class="table-loading">
+                                            <span class="loading-indicator" aria-hidden="true"></span>
+                                            Loading your reports...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="report-history-footer">
+                            <span id="reportResultsInfo">Showing your reports</span>
+                        </div>
+
+                    </section>
+
                 </section>
 
 

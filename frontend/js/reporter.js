@@ -9,8 +9,19 @@ const token = sessionStorage.getItem("ecosyncToken");
 
 let reporterReports = [];
 
+
 async function loadReporterReports() {
+    const tableBody = document.getElementById("allReportsTableBody");
+
     try {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="6" class="table-loading">
+                    Loading your reports...
+                </td>
+            </tr>
+        `;
+
         const response = await fetch(`${API_BASE_URL}/api/reports`, {
             method: "GET",
             headers: {
@@ -24,17 +35,50 @@ async function loadReporterReports() {
             throw new Error(data.error || "Unable to load reports.");
         }
 
-        reporterReports = data.reports;
+        // Store reports safely
+        reporterReports = Array.isArray(data.reports)
+            ? data.reports
+            : [];
 
+        // Display newest reports first
+        reporterReports.sort((a, b) =>
+            new Date(b.createdAt) - new Date(a.createdAt)
+        );
+
+        // Update dashboard statistics
         renderReporterStatistics();
+
+        // Update dashboard recent reports
         renderRecentReports();
+
+        // Update complete report history
+        renderReportHistory();
 
         console.log("Reporter reports loaded:", reporterReports);
 
     } catch (error) {
         console.error("Failed to load reports:", error.message);
+
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="6">
+                    <div class="report-table-message">
+                        <strong>Unable to load reports</strong>
+                        <span>${escapeHTML(error.message)}</span>
+                        <button class="report-retry-button"
+                            id="retryReportLoading">
+                            Try again
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+
+        document.getElementById("retryReportLoading")
+            .addEventListener("click", loadReporterReports);
     }
 }
+
 
 function renderReporterStatistics() {
     const total = reporterReports.length;
@@ -143,6 +187,309 @@ function renderRecentReports() {
     `;
 }
 
+// ==========================================
+// MY REPORTS: SEARCH AND FILTER
+// ==========================================
+
+function initializeReportHistory() {
+    const searchInput = document.getElementById("reportSearch");
+    const statusFilter = document.getElementById("reportStatusFilter");
+    const tableBody = document.getElementById("allReportsTableBody");
+
+    searchInput.addEventListener("input", renderReportHistory);
+    statusFilter.addEventListener("change", renderReportHistory);
+
+    // Handle View Details buttons
+    tableBody.addEventListener("click", event => {
+        const button = event.target.closest("[data-report-details]");
+
+        if (!button) return;
+
+        const reportId = button.dataset.reportDetails;
+
+        const report = reporterReports.find(
+            item => String(item.id) === String(reportId)
+        );
+
+        if (report) {
+            openReportDetails(report);
+        }
+    });
+}
+
+
+// ==========================================
+// RENDER REPORT HISTORY TABLE
+// ==========================================
+
+function renderReportHistory() {
+    const tableBody = document.getElementById("allReportsTableBody");
+    const countElement = document.getElementById("reportHistoryCount");
+    const resultsInfo = document.getElementById("reportResultsInfo");
+
+    const searchTerm = document
+        .getElementById("reportSearch")
+        .value.trim().toLowerCase();
+
+    const selectedStatus = document
+        .getElementById("reportStatusFilter")
+        .value;
+
+    const filteredReports = reporterReports.filter(report => {
+        const description = String(report.description || "").toLowerCase();
+        const reportId = String(report.id).toLowerCase();
+
+        const matchesSearch =
+            description.includes(searchTerm) ||
+            reportId.includes(searchTerm);
+
+        const matchesStatus =
+            selectedStatus === "all" ||
+            report.status === selectedStatus;
+
+        return matchesSearch && matchesStatus;
+    });
+
+    countElement.textContent =
+        `${reporterReports.length} ${reporterReports.length === 1 ? "report" : "reports"}`;
+
+    // No reports have been submitted
+    if (reporterReports.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="6">
+                    <div class="report-empty-state">
+                        <span class="report-empty-icon">▤</span>
+                        <strong>No reports submitted yet</strong>
+                        <p>Your submitted waste reports will appear here.</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+
+        resultsInfo.textContent = "No submissions to display";
+        return;
+    }
+
+    // No search/filter matches
+    if (filteredReports.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="6">
+                    <div class="report-empty-state compact">
+                        <strong>No matching reports found</strong>
+                        <p>Try another search term or status.</p>
+                        <button id="clearReportFilters"
+                            class="report-clear-filters">
+                            Clear filters
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+
+        resultsInfo.textContent = "No matching reports";
+
+        document.getElementById("clearReportFilters")
+            .addEventListener("click", () => {
+                document.getElementById("reportSearch").value = "";
+                document.getElementById("reportStatusFilter").value = "all";
+                renderReportHistory();
+            });
+
+        return;
+    }
+
+    // Display matching reports
+    tableBody.innerHTML = filteredReports.map(report => {
+        const status = String(report.status || "pending").toLowerCase();
+        const waste = String(report.wasteAmount || "unknown").toLowerCase();
+        const road = String(report.roadCondition || "unknown").toLowerCase();
+
+        return `
+            <tr>
+                <td>
+                    <div class="report-table-description">
+                        <strong>${escapeHTML(report.description || "Waste report")}</strong>
+                        <span>Report #${escapeHTML(String(report.id))}</span>
+                    </div>
+                </td>
+
+                <td>
+                    <span class="waste-level ${waste}">
+                        ${escapeHTML(waste.charAt(0).toUpperCase() + waste.slice(1))}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="road-condition ${road}">
+                        ${escapeHTML(road.charAt(0).toUpperCase() + road.slice(1))}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="report-status ${status}">
+                        ${escapeHTML(status.charAt(0).toUpperCase() + status.slice(1))}
+                    </span>
+                </td>
+
+                <td class="report-table-date">
+                    ${formatReportDate(report.createdAt)}
+                </td>
+
+                <td>
+                    <button
+                        type="button"
+                        class="report-view-button"
+                        data-report-details="${escapeHTML(String(report.id))}">
+                        View details →
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join("");
+
+    resultsInfo.textContent =
+        `Showing ${filteredReports.length} of ${reporterReports.length} reports`;
+}
+
+
+// ==========================================
+// REPORT DETAILS
+// ==========================================
+
+function openReportDetails(report) {
+    let modal = document.getElementById("reportDetailsModal");
+
+    if (!modal) {
+        modal = document.createElement("div");
+        modal.id = "reportDetailsModal";
+        modal.className = "report-details-overlay";
+
+        modal.innerHTML = `
+            <section class="report-details-modal">
+                <button type="button"
+                    class="report-details-close"
+                    aria-label="Close details">×</button>
+
+                <div id="reportDetailsContent"></div>
+            </section>
+        `;
+
+        document.body.appendChild(modal);
+
+        modal.querySelector(".report-details-close")
+            .addEventListener("click", closeReportDetails);
+
+        modal.addEventListener("click", event => {
+            if (event.target === modal) closeReportDetails();
+        });
+    }
+
+    const status = String(report.status || "pending");
+    const waste = String(report.wasteAmount || "unknown");
+    const road = String(report.roadCondition || "unknown");
+
+    document.getElementById("reportDetailsContent").innerHTML = `
+        <span class="section-eyebrow">SUBMISSION DETAILS</span>
+
+        <h2>Report #${escapeHTML(String(report.id))}</h2>
+
+        <p class="report-details-intro">
+            Review the information associated with this report.
+        </p>
+
+        <div class="report-details-status-row">
+            <span class="report-status ${escapeHTML(status)}">
+                ${escapeHTML(status)}
+            </span>
+
+            <span class="report-details-date">
+                Submitted ${formatReportDate(report.createdAt)}
+            </span>
+        </div>
+
+        <div class="report-details-description">
+            <span>DESCRIPTION</span>
+            <p>${escapeHTML(report.description || "No description provided.")}</p>
+        </div>
+
+        <div class="report-details-grid">
+            <div>
+                <span>WASTE LEVEL</span>
+                <strong>${escapeHTML(waste)}</strong>
+            </div>
+
+            <div>
+                <span>ROAD CONDITION</span>
+                <strong>${escapeHTML(road)}</strong>
+            </div>
+
+            <div>
+                <span>LATITUDE</span>
+                <strong>${formatCoordinate(report.latitude)}</strong>
+            </div>
+
+            <div>
+                <span>LONGITUDE</span>
+                <strong>${formatCoordinate(report.longitude)}</strong>
+            </div>
+        </div>
+
+        <button type="button"
+            class="report-details-done"
+            id="closeReportDetailsButton">
+            Close details
+        </button>
+    `;
+
+    modal.classList.add("active");
+    document.body.classList.add("modal-open");
+
+    document.getElementById("closeReportDetailsButton")
+        .addEventListener("click", closeReportDetails);
+}
+
+
+function closeReportDetails() {
+    document.getElementById("reportDetailsModal")
+        ?.classList.remove("active");
+
+    document.body.classList.remove("modal-open");
+}
+
+
+// ==========================================
+// DATE AND COORDINATE HELPERS
+// ==========================================
+
+function formatReportDate(value) {
+    if (!value) return "—";
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) return "—";
+
+    return date.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+    });
+}
+
+
+function formatCoordinate(value) {
+    if (value === null || value === undefined || value === "") {
+        return "Not available";
+    }
+
+    const number = Number(value);
+
+    return Number.isFinite(number)
+        ? number.toFixed(5)
+        : "Not available";
+}
+
 function escapeHTML(value) {
     return String(value).replace(/[&<>"']/g, character => {
         const entities = {
@@ -195,6 +542,8 @@ async function verifyReporterSession() {
         displayUserInformation(user);
 
        await loadReporterReports();
+
+       initializeReportHistory();
 
 
         // Start dashboard interactions
